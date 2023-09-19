@@ -1,5 +1,6 @@
 import os
 import sys
+import importlib.util
 from pathlib import Path
 import torch
 import torch.nn as nn
@@ -9,6 +10,14 @@ import numpy.typing as npt
 import logging
 import datetime
 from typing import Optional
+
+
+def load_config(path): 
+    spec = importlib.util.spec_from_file_location("config_module", path)
+    config_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(config_module)
+    config = config_module.config
+    return config
 
 
 def set_seed():

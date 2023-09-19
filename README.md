@@ -39,7 +39,7 @@ To reproduce the analysis run the following<sup>1</sup>:
 
 ```shell
 conda activate med-ml
-python run_analysis.py --config configs/experiment_config_example.py --setup --get_data --model_train --model_eval --load_eval_summary
+python run_analysis.py --config configs/experiment_config_example.py --setup --train_mode=train 
 ```
 
 This will save logs, results, and other outputs related to the run to a `run_dir` in the `out` dir specified by  ` \ results \ <dataset name> \ <model_name> \ <run_name>`
@@ -62,6 +62,8 @@ To run other analysis with other models, make a new config file with a similar f
 │   ├── predict.py
 │   ├── eval.py
 │   ├── vis.py
+│   ├── run_simple.py
+│   ├── run_torch.py
 │   ├── run_analysis.py
 │   └── environment.yml
 └── .gitignore
