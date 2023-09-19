@@ -1,8 +1,8 @@
 name: med-ml
 channels:
-  - defaults
-  - pytorch
   - conda-forge
+  - pytorch
+  - defaults
 dependencies:
   - python=3.9
   - pandas
