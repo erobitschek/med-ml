@@ -2,9 +2,10 @@
 A repository to develop code workflows for to analyze medical data to improve healthcare, for example by extracting insights that inform population health and health policy. 
 
 ## Table of Contents
-- [Installation](#installation)
+- [Setup](#setup)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
+- [Notes](#notes)
 
 ## Setup
 1. Clone the repository:
@@ -83,14 +84,29 @@ This repository is a work in progress and will be updated regularly. I am curren
    - regularization
 - Implementing more complex models (e.g. RNNs) but this also requires additional preprocessing of the data as timeseries, and a different target question
 - Methods for explainability and interpretability
-
 ---
-### Notes
+
+
+## Notes
 
 #### ICD-10 Codes
 To make this generated data more relevant, I will draw the medical codes from actual "International Statistical Classification of Diseases and Related Health Problems 10th Revision" or "ICD-10" codes commonly used in medical practice for diagnosis. Some browsers for this type of data can be found [from WHO](https://icd.who.int/browse10/2019/en) and [from the Icelandic DoH](https://skafl.is/). (I'm a partciular fan of the Icelandic one).
 
 #### Initial question for model testing
- **As an initial prediction task I have generated data concerning the following question: Can we predict the biological sex of the patient based on the signal from the codes in their medical record?** (This task was chosen for its relative interpretability and simplicity as a good 'low hanging fruit' prediction task, and because I could a priori choose medical features related to sex to model in the dataset (e.g. birth, prostate issues, etc).) In my synthetic data I can titrate that predictive signal in the generated records of the patients in a way that loosely mimics real health records, because I can ensure that only female (male) generated patients get codes associated with female (male) biology, and can adjust what proportion of the total codes are sex-related. This will faciliate downstream testing and sanity checks of some interpretability and explanability methods, as I should be able to recover some of these features as most predictive and relevant later.
+ *Can we predict the biological sex of the patient based on the signal from the codes in their medical record?*
+ - This task was chosen for its relative interpretability and simplicity as a good 'low hanging fruit' prediction task, and because I could a priori choose medical features related to sex to model in the dataset (e.g. birth, prostate issues, etc).
+ - In my synthetic data I can titrate that predictive signal in the generated records of the patients in a way that loosely mimics real health records, because I can ensure that only female (male) generated patients get codes associated with female (male) biology, and can adjust what proportion of the total codes are sex-related. 
+   - This will faciliate downstream testing and sanity checks of some interpretability and explanability methods, as I should be able to recover some of these features as most predictive and relevant later.
  
- Note: As a later task, I will also want to predict more complex and time dependent conditions so I will also specify target codes based on a common health condition with that in mind. 
+ ### Other questions for model testing
+ - As a later task, I will also want to predict more complex and time dependent conditions so I will also specify target codes based on a common health condition with that in mind. 
+ - I am currently reviewing the literature re: longitudinal analysis (e.g. with transformers), respresentational methods (e.g. graph neural networks) and interpretability and explanability techniques in order to be able to apply these methods appropriately.
+
+ ### Recent work I find particularly cool 
+ - Prediction of future disease states via health trajectories in [pancreatic cancer](https://www.nature.com/articles/s41591-023-02332-5) 
+ - Using graph neural networks to encode underlying relationships like [family history](https://arxiv.org/abs/2304.05010) to predict disease risk
+ - Real time prediction of disease risk as in [acute kidney disease](https://www.nature.com/articles/s41746-020-00346-8), or to manage [ICU circulatory failure](https://www.nature.com/articles/s41591-020-0789-4).
+ - Combining econometrics and machine learning to evaluate [physician decision making](https://academic.oup.com/qje/article/137/2/679/6449024) and to assess health policies and standards (e.g. in the case of [breast cancer screening](https://economics.mit.edu/sites/default/files/2022-08/Screening%20and%20Selection-%20The%20Case%20of%20Mammograms.pdf))
+ - Using machine learning methods to reduce disparities in underserved populations (e.g. in [pain reduction](https://www.nature.com/articles/s41591-020-01192-7))
+ - Understanding unintended consequences of algorithms (e.g. how ML models can [predict race from medical imaging](https://www.thelancet.com/journals/landig/article/PIIS2589-7500(22)00063-2/fulltext)) or [racial biases](https://www.science.org/doi/10.1126/science.aax2342) to make the best and most fair models that enhance patient health.
+
