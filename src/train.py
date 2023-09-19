@@ -2,6 +2,7 @@ import torch as torch
 import torch.nn as nn
 import torch.optim as optim
 from typing import Optional, Callable, Dict
+import numpy as np
 import numpy.typing as npt
 import logging
 import yaml
@@ -20,40 +21,53 @@ from utils import save_model
 
 
 def train_simple_model(
+    run_dir: str,
     x_train: npt.ArrayLike,
     y_train: npt.ArrayLike,
     x_test: npt.ArrayLike,
     y_test: npt.ArrayLike,
     model: Callable,
     param_grid: Optional[Dict] = None,
+    x_val: Optional[npt.ArrayLike] = None,
+    y_val: Optional[npt.ArrayLike] = None,
 ) -> Callable:
     """
     Function to train a sklearn model on the specified data. If param grid is used, the model hyperparameter is selected
     using 5 fold CV.
 
     Parameters:
+    - run_dir (str): Directory to save outputs
     - x_train (array-like): Training features.
     - y_train (array-like): Training labels.
     - x_test (array-like): Testing features.
     - y_test (array-like): Testing labels.
     - model (Callable): The machine learning model to train.
     - param_grid (Optional[Dict]): Hyperparameters for grid search (default: None).
+    - x_val (Optional[array-like]): Validation features (default: None).
+    - y_val (Optional[array-like]): Validation labels (default: None).
 
     Returns:
     - Trained sci-kit learn model.
      The function prints evaluation metrics on the test set for an initial preview of model performance.
 
     """
-    x_train = x_train.squeeze()
-    x_test = x_test.squeeze()
+    if x_val is not None:
+        x_train = x_train.squeeze()
+        x_test = x_test.squeeze()
+    else:
+        print("combine training and validation data")
+        x_train = np.vstack((x_train, x_val)).squeeze()
+        y_train = np.hstack((y_train, y_val))
 
     if not param_grid:
         model.fit(x_train, y_train)
     else:
-        clf = GridSearchCV(model, param_grid, cv=5)
-        clf.fit(x_train, y_train)
-        model = clf.best_estimator_
-        print(clf.best_params_)
+        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+        grid.fit(x_train, y_train)
+        model = grid.best_estimator_
+        print(grid.best_params_)
+        with open(run_dir / "grid_search.yaml", "w") as f:
+            yaml.dump({f"best_params": grid.best_params_}, f)
 
     y_pred = model.predict(x_test)
 

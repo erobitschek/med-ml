@@ -7,9 +7,18 @@ from predict import save_predictions_to_file
 from eval import evaluate_predictions, save_evaluation_summary
 from configs.experiment_config_example import Config
 import numpy.typing as npt
+from typing import Optional
 
 
-def run_simple(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: npt.ArrayLike, test_set: npt.ArrayLike, train_mode: str, model_eval: bool=True):
+def run_simple(
+    config: Config,
+    run_dir: str,
+    train_set: npt.ArrayLike,
+    test_set: npt.ArrayLike,
+    train_mode: str,
+    val_set: Optional[npt.ArrayLike] = None,
+    model_eval: bool = True,
+):
     """
     Trains, loads, and evaluates a simple model using scikit-learn.
 
@@ -37,12 +46,15 @@ def run_simple(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: 
     if train_mode == "train":  # FUTURE: implement 'resume' option
         logger.info("Training sklearn implementation of model...")
         model = train_simple_model(
+            run_dir=run_dir,
             x_train=train_set.X,
             y_train=train_set.y,
             x_test=test_set.X,
             y_test=test_set.y,
             model=skLogisticRegression(max_iter=1000),
-            param_grid={"C": [1, 10, 50, 100, 1000]},
+            param_grid=config.model.param_grid,
+            x_val=val_set.X,
+            y_val=val_set.y,
         )
         logger.info(f"Training finished. Model type trained: {type(model)}")
         dump(
@@ -52,7 +64,9 @@ def run_simple(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: 
         logger.info(f"Model saved to .joblib file")
 
     elif train_mode == "load":
-        assert os.path.exists(f"{run_dir}/{config.model.name}_{config.model.implementation}_model.joblib"), "Model file not found"
+        assert os.path.exists(
+            f"{run_dir}/{config.model.name}_{config.model.implementation}_model.joblib"
+        ), "Model file not found"
         model = load(
             f"{run_dir}/{config.model.name}_{config.model.implementation}_model.joblib"
         )
