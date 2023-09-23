@@ -1,5 +1,6 @@
+import os
+
 import matplotlib.pyplot as plt
-from utils import ensure_directory_exists
 
 
 def plot_loss(train_losses, val_losses, out_dir=None):
@@ -27,7 +28,7 @@ def plot_loss(train_losses, val_losses, out_dir=None):
     >>> plot_loss(train_losses, val_losses, out_dir='./plots')
     """
 
-    plt.style.use("seaborn-whitegrid")
+    plt.style.use("ggplot")
     fig, ax = plt.subplots(figsize=(6, 4))
 
     ax.plot(train_losses, label="Training Loss", color="blue", linewidth=1.5)
@@ -41,7 +42,7 @@ def plot_loss(train_losses, val_losses, out_dir=None):
     ax.legend(frameon=False)
 
     if out_dir:
-        ensure_directory_exists(out_dir)
+        os.makedirs(out_dir, exist_ok=True)
         plt.savefig(f"{out_dir}/loss_plot.png", dpi=300, bbox_inches="tight")
     else:
         plt.show()

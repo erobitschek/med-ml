@@ -1,17 +1,19 @@
 import os
+from typing import Optional
+
+import numpy.typing as npt
 from joblib import dump, load
 from sklearn.linear_model import LogisticRegression as skLogisticRegression
-from utils import set_seed, setup_logger
-from train import train_simple_model
-from predict import save_predictions_to_file
+
+from configs.experiment_config_example import RunConfig
 from eval import evaluate_predictions, save_evaluation_summary
-from configs.experiment_config_example import Config
-import numpy.typing as npt
-from typing import Optional
+from predict import save_predictions_to_file
+from train import train_simple_model
+from utils import setup_logger
 
 
 def run_simple(
-    config: Config,
+    config: RunConfig,
     run_dir: str,
     train_set: npt.ArrayLike,
     test_set: npt.ArrayLike,
@@ -23,60 +25,69 @@ def run_simple(
     Trains, loads, and evaluates a simple model using scikit-learn.
 
     Parameters:
-    - config (Config): Configuration object containing runtime settings and model parameters.
+    - config (Config): RunConfiguration object containing runtime settings and model parameters.
     - run_dir (str): Directory to save and retrieve models and logs.
-    - train_set (DataSet): Training dataset object with attributes X and y.
-    - val_set (DataSet): Validation dataset object with attributes X and y.
-    - test_set (DataSet): Test dataset object with attributes X and y.
+    - train_set (DataSet): Training dataset object with attributes x and y.
+    - val_set (DataSet): Validation dataset object with attributes x and y.
+    - test_set (DataSet): Test dataset object with attributes x and y.
     - train_mode (str): Either "train" for training or "load" for loading pre-trained model.
     - model_eval (bool): If True, evaluate the model on the test set.
 
     Returns:
     - None
 
-    Raises:
-    - AssertionError: If model file is not found when train_mode is "load".
-
     Notes:
     - This function is intended for models using the scikit-learn library.
     """
-    set_seed()
     logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
+    model_path = f"{run_dir}/{config.model.name}_{config.model.framework}_model.joblib"
 
-    if train_mode == "train":  # FUTURE: implement 'resume' option
-        logger.info("Training sklearn implementation of model...")
-        model = train_simple_model(
-            run_dir=run_dir,
-            x_train=train_set.X,
-            y_train=train_set.y,
-            x_test=test_set.X,
-            y_test=test_set.y,
-            model=skLogisticRegression(max_iter=1000),
-            param_grid=config.model.param_grid,
-            x_val=val_set.X,
-            y_val=val_set.y,
-        )
+    if train_mode == "train":
+        logger.info("Training sklearn framework of model...")
+
+        if val_set is None:
+            model = train_simple_model(
+                run_dir=run_dir,
+                x_train=train_set.x,
+                y_train=train_set.y,
+                x_test=test_set.x,
+                y_test=test_set.y,
+                model=skLogisticRegression(max_iter=config.model.max_iter),
+                param_grid=config.model.param_grid,
+            )
+
+        else:
+            model = train_simple_model(
+                run_dir=run_dir,
+                x_train=train_set.x,
+                y_train=train_set.y,
+                x_test=test_set.x,
+                y_test=test_set.y,
+                model=skLogisticRegression(max_iter=config.model.max_iter),
+                param_grid=config.model.param_grid,
+                x_val=val_set.x,
+                y_val=val_set.y,
+            )
+
         logger.info(f"Training finished. Model type trained: {type(model)}")
-        dump(
-            model,
-            f"{run_dir}/{config.model.name}_{config.model.implementation}_model.joblib",
-        )
+        dump(model, model_path)
         logger.info(f"Model saved to .joblib file")
 
     elif train_mode == "load":
-        assert os.path.exists(
-            f"{run_dir}/{config.model.name}_{config.model.implementation}_model.joblib"
-        ), "Model file not found"
-        model = load(
-            f"{run_dir}/{config.model.name}_{config.model.implementation}_model.joblib"
-        )
-        logger.info(f"Model loaded from previous training")
+        if os.path.exists(model_path):
+            model = load(model_path)
+            logger.info(f"Model loaded from previous training")
+        else:
+            raise FileNotFoundError("Model file not found")
+
+    elif train_mode == 'resume':
+        raise NotImplementedError("Resume training is not implemented yet.")
 
     if model_eval:
         logger.info(f"Predicting on test set...")
         predictions, probabilities = (
-            model.predict(test_set.X),
-            model.predict_proba(test_set.X)[:, 1],
+            model.predict(test_set.x),
+            model.predict_proba(test_set.x)[:, 1],
         )  # this assumes binary classification
 
         logger.info(
@@ -94,9 +105,8 @@ def run_simple(
             predictions=predictions, true_labels=test_set.y
         )
         save_evaluation_summary(
-            true_labels=test_set.y,
-            predicted_probs=probabilities,
+            metric_dict=evaluation,
             run_folder=run_dir,
-            filename=f"evaluation_summary.txt",
+            filename=f"evaluation_summary.json",
         )
         logger.info(f"Saved evaluation summary.")

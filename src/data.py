@@ -1,11 +1,14 @@
-import numpy as np
-import pandas as pd
 import pickle
 from dataclasses import dataclass
-from typing import Optional, Union, List, Callable
+from typing import Any, Callable, List, Optional, Union
+
+import numpy as np
 import numpy.typing as npt
-from sklearn.model_selection import train_test_split
+import pandas as pd
 import torch
+from sklearn.model_selection import train_test_split
+
+from configs.config_scaffold import FeatureEncoding, SplitRatios
 
 Array = Union[np.ndarray, pd.DataFrame]
 
@@ -17,83 +20,50 @@ class DatasetMeta:
 
 
 @dataclass
-class Trn:
-    X: Array
+class DataSplit:
+    x: Array
     y: Array
     feature_names: Array = None
     ndropped: int = None
 
 
-@dataclass
-class Val:
-    X: Array
-    y: Array
-    feature_names: Array = None
-    ndropped: int = None
-
-
-@dataclass
-class Tst:
-    X: Array
-    y: Array
-    feature_names: Array = None
-    ndropped: int = None
-
-
-class torch_dataset(torch.utils.data.Dataset):
-    """
-    Wrapper around a torch Dataset. This can be passed to a DataLoader for training.
-    """
+class TorchDataset(torch.utils.data.Dataset):
+    """Extension of torch Dataset class, which can be passed to a DataLoader."""
 
     def __init__(
         self,
-        X: npt.ArrayLike,
+        x: npt.ArrayLike,
         y: npt.ArrayLike,
         dataset_name: str,
         transforms: List[Callable] = None,
     ):
         self.y = torch.tensor(y, dtype=torch.long)
-        self.X = torch.tensor(X, dtype=torch.float32)
+        self.x = torch.tensor(x, dtype=torch.float32)
         self.dataset_name = dataset_name
         self.transforms = transforms
 
     def __len__(self):
-        return self.X.shape[0]
+        return self.x.shape[0]
 
     def __getitem__(self, idx):
-        X_idx = self.X[idx]
+        x_idx = self.x[idx]
 
         if self.transforms:
-            X_final = self.transforms(X_idx)
+            x_final = self.transforms(x_idx)
         else:
-            X_final = X_idx
+            x_final = x_idx
 
-        return X_final, self.y[idx]
+        return x_final, self.y[idx]
 
 
-def load_data(path: str, filter_cols: list = None):
-    """
-    Load CSV data from a given path, optionally filtering specific columns.
-
-    Parameters
-    ----------
-    path : str
-        Path to the CSV data source.
-    filter_cols : list, optional
-        List of columns to filter. If None, all columns are loaded.
-
-    Returns
-    -------
-    pd.DataFrame
-        Loaded data.
-    """
+def load_data(path: str, filter_cols: list = None) -> pd.DataFrame:
     if filter_cols:
         return pd.read_csv(path)[filter_cols]
     else:
         return pd.read_csv(path)
 
 
-def get_targetdf(data: pd.DataFrame):
+def get_targetdf(data: pd.DataFrame) -> pd.DataFrame:
     """
     Extract and encode gender information from data.
 
@@ -115,8 +85,12 @@ def get_targetdf(data: pd.DataFrame):
 
 
 def filter_codes_by_overall_freq(
-    data: pd.DataFrame, code_col: str = "CODE", threshold: int = 0
-):
+    data: pd.DataFrame,
+    code_col: str = "CODE",
+    threshold: int = 0,
+    write_kept_codes: bool = False,
+    run_dir: str = None,
+) -> pd.DataFrame:
     """
     Filter codes based on their frequency.
 
@@ -139,23 +113,16 @@ def filter_codes_by_overall_freq(
     codes_to_keep = code_counts[code_counts > threshold].index
     filtered_data = data[data[code_col].isin(codes_to_keep)]
     filtered_data.reset_index(inplace=True, drop=True)
+    if write_kept_codes:
+        with open(f"{run_dir}/kept_codes.pkl", "wb") as f:
+            pickle.dump(codes_to_keep, f)
     print(f"Out of {unique_codes}, {len(codes_to_keep)} pass the threshold.")
-    return codes_to_keep, filtered_data
+    return filtered_data
 
 
-def encode_codes(df: pd.DataFrame):
+def encode_codes(df: pd.DataFrame) -> pd.DataFrame:
     """
     One-hot encode 'CODE' column of the dataframe.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Data containing 'CODE' column.
-
-    Returns
-    -------
-    pd.DataFrame
-        One-hot encoded dataframe.
     """
     one_hot = (
         pd.get_dummies(df, columns=["CODE"], prefix="", prefix_sep="")
@@ -166,19 +133,9 @@ def encode_codes(df: pd.DataFrame):
     return one_hot
 
 
-def encode_codes_with_counts(df: pd.DataFrame):
+def encode_codes_with_counts(df: pd.DataFrame) -> pd.DataFrame:
     """
     One-hot encode 'CODE' column and return count of each code.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Data containing 'CODE' column.
-
-    Returns
-    -------
-    pd.DataFrame
-        Count of each one-hot encoded code.
     """
     one_hot = pd.get_dummies(df, columns=["CODE"], prefix="", prefix_sep="")
     code_counts = one_hot.groupby("ID").sum()
@@ -186,12 +143,12 @@ def encode_codes_with_counts(df: pd.DataFrame):
     return code_counts
 
 
-def get_X_y(
+def get_x_y(
     data: pd.DataFrame,
     target: str = "is_Female",
     threshold: int = 0,
     encoding: str = "binary",
-):
+) -> tuple[pd.DataFrame, pd.Series]:
     """
     Extract features and target variables based on encoding method.
 
@@ -209,133 +166,98 @@ def get_X_y(
     Returns
     -------
     Tuple[pd.DataFrame, pd.Series]
-        Features (X) and target (y) data.
+        Features (x) and target (y) data.
     """
-    codes_to_keep, filtered_data = filter_codes_by_overall_freq(
+    filtered_data = filter_codes_by_overall_freq(
         data, code_col="CODE", threshold=threshold
     )
-    pt_sex = get_targetdf(filtered_data)
-    if encoding == "binary":
+    target_df = get_targetdf(filtered_data)
+    if encoding == FeatureEncoding.BINARY:
         print("Encoding feature presence.")
         features = encode_codes(filtered_data).astype(int)
-    elif encoding == "counts":
+    elif encoding == FeatureEncoding.COUNT:
         print("Encoding feature counts.")
         features = encode_codes_with_counts(filtered_data).astype(int)
+    else: 
+        raise ValueError(f"Encoding method {encoding} not supported.")
 
-    # assumes these are in the same order/share the same index!
-    X = features
-    y = pt_sex[target]
+    assert features.index.equals(target_df.index), 'Feature and target var indices do not match.'
 
-    return X, y
+    x = features
+    y = target_df[target]
+
+    return x, y
 
 
-def df_to_array(df: pd.DataFrame, feature_array=True):
+def df_to_array(x: pd.DataFrame, y: pd.Series) -> tuple[npt.ArrayLike, npt.ArrayLike, DatasetMeta]:
     """
-    Convert a dataframe to an array and optionally return metadata.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input data.
-    feature_array : bool
-        If True, return metadata for dataset.
-
-    Returns
-    -------
-    Tuple[np.array, Optional[DatasetMeta]]
-        Data array and optional metadata.
+    Convert x and y to an array and optionally return metadata.
     """
-    data_array = df.values
-    if feature_array:
-        meta = DatasetMeta(ids=df.index.tolist(), feature_names=df.columns.tolist())
-        return data_array, meta
-    return data_array
+    x_values = x.values
+    y_values = y.values
+    meta = DatasetMeta(ids=x.index.tolist(), feature_names=x.columns.tolist())
+    return x_values, y_values, meta
 
 
-def save_vars_to_pickle(run_folder: str, items: list, names: list):
+def save_vars_to_pickle(run_folder: str, data: Any, filename: str):
     """
     Save variables to pickle files in a given folder.
-
-    Parameters
-    ----------
-    run_folder : str
-        Folder path to save pickle files.
-    items : list
-        List of items to save.
-    names : list
-        Names for the pickle files.
-
-    Returns
-    -------
-    None
     """
-    for i in range(len(items)):
-        with open(f"{run_folder}/{names[i]}.pkl", "wb") as f:
-            pickle.dump(items[i], f)
+    with open(f"{run_folder}/{filename}.pkl", "wb") as f:
+        pickle.dump(data, f)
 
 
-def split_data(
-    X: Array,
+def split_data_train_test(
+    x: Array,
     y: Array,
-    train_size: float = 0.8,
-    val_size: float = 0.1,
-    test_size: float = 0.1,
+    split_ratios: SplitRatios = SplitRatios(),
     random_state: int = 3,
-):
+) -> tuple[DataSplit, DataSplit]:
     """
     Split data into training, testing, and optionally validation sets.
-
-    Parameters
-    ----------
-    X : np.array
-        Feature data.
-    y : np.array
-        Target data.
-    train_size : float
-        Proportion of data to use for training.
-    val_size : float
-        Proportion of data to use for validation.
-    test_size : float
-        Proportion of data to use for testing.
-    random_state : int
-        Seed for random number generator.
-
-    Returns
-    -------
-    Tuple[Trn, Tst, Optional[Val]]
-        Data splits for training, testing, and optionally validation.
     """
-    assert (
-        train_size + val_size + test_size == 1.0
-    ), "The sum of split ratios should be 1.0"
-    if val_size == 0:
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state
-        )
+    train_size, test_size = split_ratios.train, split_ratios.test
 
-        train = Trn(X=X_train, y=y_train)
-        test = Tst(X=X_test, y=y_test)
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, test_size=test_size, random_state=random_state
+    )
 
-        return train, test
-    else:
-        X_train, X_temp, y_train, y_temp = train_test_split(
-            X, y, test_size=1 - train_size, random_state=random_state
-        )
-        ratio_val = val_size / (val_size + test_size)
-        X_val, X_test, y_val, y_test = train_test_split(
-            X_temp, y_temp, test_size=1 - ratio_val, random_state=random_state
-        )
+    train = DataSplit(x=x_train, y=y_train)
+    test = DataSplit(x=x_test, y=y_test)
 
-        train = Trn(X=X_train, y=y_train)
-        test = Tst(X=X_test, y=y_test)
-        val = Val(X=X_val, y=y_val)
+    return train, test
+    
 
-        return train, test, val
+def split_data_train_test_val(
+    x: Array,
+    y: Array,
+    split_ratios: SplitRatios = SplitRatios(),
+    random_state: int = 3,
+) -> tuple[DataSplit, DataSplit, DataSplit]:
+    """
+    Split data into training, testing, and optionally validation sets.
+    """
+    train_size, val_size, test_size = split_ratios.train, split_ratios.val, split_ratios.test
+
+    x_train, x_temp, y_train, y_temp = train_test_split(
+        x, y, test_size=1 - train_size, random_state=random_state
+    )
+    ratio_val = val_size / (val_size + test_size)
+    x_val, x_test, y_val, y_test = train_test_split(
+        x_temp, y_temp, test_size=1 - ratio_val, random_state=random_state
+    )
+
+    train = DataSplit(x=x_train, y=y_train)
+    test = DataSplit(x=x_test, y=y_test)
+    val = DataSplit(x=x_val, y=y_val)
+
+    return train, test, val
+
 
 
 def get_dataloaders(
-    dataset: str, train: Trn, test: Tst, batch_size: int = 32, val: Optional[Val] = None
-) -> torch.utils.data.DataLoader:
+    dataset: str, train: DataSplit, test: DataSplit, batch_size: int = 32, val: Optional[DataSplit] = None
+) -> tuple[torch.utils.data.DataLoader, ...]:
     """
     Create dataloaders for training, testing, and optionally validation sets.
 
@@ -357,18 +279,18 @@ def get_dataloaders(
     Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader, Optional[torch.utils.data.DataLoader]]
         Dataloaders for training, testing, and optionally validation.
     """
-    ds_train = torch_dataset(X=train.X, y=train.y, dataset_name=dataset)
-    ds_test = torch_dataset(X=test.X, y=test.y, dataset_name=dataset)
+    ds_train = TorchDataset(x=train.x, y=train.y, dataset_name=dataset)
+    ds_test = TorchDataset(x=test.x, y=test.y, dataset_name=dataset)
 
     train_loader = torch.utils.data.DataLoader(
         ds_train, batch_size=batch_size, shuffle=True
     )
     test_loader = torch.utils.data.DataLoader(ds_test, batch_size=batch_size)
 
-    if val:
-        ds_val = torch_dataset(X=val.X, y=val.y, dataset_name=dataset)
-        val_loader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size)
-        return train_loader, test_loader, val_loader
+    val_loader = None
 
-    else:
-        return train_loader, test_loader
+    if val is not None:
+        ds_val = TorchDataset(x=val.x, y=val.y, dataset_name=dataset)
+        val_loader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size)
+    
+    return train_loader, test_loader, val_loader

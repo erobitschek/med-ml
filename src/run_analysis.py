@@ -1,23 +1,31 @@
 import argparse
 import sys
 
+from configs.config_scaffold import (DataState, ModelFramework, RunConfig,
+                                     TrainMode)
+from data import (df_to_array, get_x_y, load_data, save_vars_to_pickle,
+                  split_data_train_test, split_data_train_test_val)
+from run_simple import run_simple
+from run_torch import run_torch
+from utils import load_config, set_seed, setup_logger, setup_output_dir
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Main pipeline for model processing.")
     parser.add_argument(
-        "--config",
-        required=True,
-        help="Path to the configuration file."
+        "--config", required=True, help="Path to the configuration file."
     )
     parser.add_argument(
         "--data_state",
-        default="raw",
+        choices=[state.name.lower() for state in DataState],
+        default=DataState.RAW.name.lower(),
         help="Execute data loading and preprocessing code.",
     )
     parser.add_argument(
         "--train_mode",
-        default="train", # can be "load" too
-        help="Whether to train the model or load it.",
+        choices=[mode.name.lower() for mode in TrainMode],
+        default=TrainMode.TRAIN.name.lower(),
+        help="Whether to train the model or load it (e.g. for prediction/evaluation).",
     )
     parser.add_argument(
         "--model_eval",
@@ -30,33 +38,25 @@ def parse_args():
 def main():
     args = parse_args()
 
-    from utils import load_config, set_seed, get_run_dir, setup_logger
-
     config = load_config(args.config)
+
     set_seed()
 
-    run_dir = get_run_dir(
+    run_dir = setup_output_dir(
         run_name=config.run_name,
         dataset_name=config.dataset.name,
         model_name=config.model.name,
     )
 
+    print(f"Run dir is: {run_dir}")
+
     logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
 
-    if (
-        args.data_state == "raw"
-    ):  # FUTURE: implement loading from 'preprocessed' and 'split' data states
-        from data import (
-            load_data,
-            get_X_y,
-            split_data,
-            df_to_array,
-            save_vars_to_pickle,
-        )
-
+    # TODO: implement loading from 'preprocessed' and 'split' data states
+    if args.data_state == "raw":
         logger.info(f"Loading data")
         raw = load_data(config.dataset.path, filter_cols=["ID", "CODE", "SEX"])
-        X, y = get_X_y(
+        x, y = get_x_y(
             raw,
             target=config.dataset.target,
             threshold=config.dataset.feature_threshold,
@@ -65,36 +65,40 @@ def main():
         logger.info(f"Data loaded")
         logger.info(f"Converting target df to array")
 
-        y = df_to_array(y, feature_array=False)
-        X, meta = df_to_array(X, feature_array=True)
+        x, y, meta = df_to_array(x, y)
 
-        logger.info(f"Converting feature df to array")
         logger.info(f"Extracting row, column metadata from feature array")
         logger.info(f"Saving metadata to {run_dir}")
 
-        save_vars_to_pickle(
-            run_dir,
-            items=[meta.ids, meta.feature_names],
-            names=["individual_ids", "feature_names"],
+        save_vars_to_pickle(run_dir, meta.ids, "individual_ids")
+        save_vars_to_pickle(run_dir, meta.feature_names, "feature_names")
+
+        logger.info(
+            f"The split ratios for the dataset are: {config.dataset.split_ratios}"
         )
 
-        split_ratios = config.dataset.split_ratios
-        logger.info(f"The split ratios for the dataset are: {split_ratios}")
-        train_set, test_set, val_set = split_data(
-            X,
-            y,
-            train_size=split_ratios["train"],
-            val_size=split_ratios["val"],
-            test_size=split_ratios["test"],
-        )
+        if config.dataset.split_ratios.val == 0:
+            val_set = None
+            train_set, test_set = split_data_train_test(
+                x,
+                y,
+                split_ratios=config.dataset.split_ratios,
+            )
+            logger.info(
+                f"Dataset shapes (train, test): {train_set.x.shape}, {test_set.x.shape}"
+            )
 
-        logger.info(f"Training dataset shape: {train_set.X.shape}")
-        logger.info(f"Validation dataset shape: {val_set.X.shape}")
-        logger.info(f"Testing dataset shape: {test_set.X.shape}")
+        else:
+            train_set, test_set, val_set = split_data_train_test_val(
+                x,
+                y,
+                split_ratios=config.dataset.split_ratios,
+            )
+            logger.info(
+                f"Dataset shapes (train, test, val): {train_set.x.shape}, {test_set.x.shape}, {val_set.x.shape}"
+            )
 
-        if config.model.implementation == "sklearn":
-            from run_simple import run_simple
-
+        if config.model.framework == ModelFramework.SKLEARN:
             run_simple(
                 config=config,
                 run_dir=run_dir,
@@ -104,9 +108,7 @@ def main():
                 train_mode=args.train_mode,
                 model_eval=args.model_eval,
             )
-        if config.model.implementation == "pytorch":
-            from run_torch import run_torch
-
+        elif config.model.framework == ModelFramework.PYTORCH:
             run_torch(
                 config=config,
                 run_dir=run_dir,
@@ -115,6 +117,11 @@ def main():
                 test_set=test_set,
                 train_mode=args.train_mode,
                 model_eval=args.model_eval,
+            )
+        else:
+            supported_frameworks = [f.name for f in ModelFramework]
+            raise ValueError(
+                f"Got the framework {config.model.framework}; supported values are: {supported_frameworks}."
             )
 
 

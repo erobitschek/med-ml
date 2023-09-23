@@ -1,22 +1,18 @@
+import logging
+from typing import Callable, Dict, Optional
+
+import numpy as np
+import numpy.typing as npt
 import torch as torch
 import torch.nn as nn
 import torch.optim as optim
-from typing import Optional, Callable, Dict
-import numpy as np
-import numpy.typing as npt
-import logging
 import yaml
+from sklearn.metrics import (accuracy_score, average_precision_score,
+                             balanced_accuracy_score, f1_score,
+                             precision_score, recall_score, roc_auc_score)
 from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
-from sklearn.metrics import (
-    precision_score,
-    recall_score,
-    f1_score,
-    accuracy_score,
-    balanced_accuracy_score,
-    average_precision_score,
-    roc_auc_score,
-)
+
 from utils import save_model
 
 
@@ -42,16 +38,17 @@ def train_simple_model(
     - x_test (array-like): Testing features.
     - y_test (array-like): Testing labels.
     - model (Callable): The machine learning model to train.
-    - param_grid (Optional[Dict]): Hyperparameters for grid search (default: None).
-    - x_val (Optional[array-like]): Validation features (default: None).
-    - y_val (Optional[array-like]): Validation labels (default: None).
+    - param_grid (Optional[Dict]): Hyperparameters for grid search 
+    - x_val (Optional[array-like]): Validation features
+    - y_val (Optional[array-like]): Validation labels 
 
     Returns:
     - Trained sci-kit learn model.
      The function prints evaluation metrics on the test set for an initial preview of model performance.
 
     """
-    if x_val is not None:
+    
+    if x_val is None:
         x_train = x_train.squeeze()
         x_test = x_test.squeeze()
     else:
@@ -66,7 +63,7 @@ def train_simple_model(
         grid.fit(x_train, y_train)
         model = grid.best_estimator_
         print(grid.best_params_)
-        with open(run_dir / "grid_search.yaml", "w") as f:
+        with open(f"{run_dir}/grid_search.yaml", "w") as f:
             yaml.dump({f"best_params": grid.best_params_}, f)
 
     y_pred = model.predict(x_test)
@@ -99,12 +96,11 @@ def train_pytorch_model(
     criterion=nn.BCELoss(),
     optimizer="adam",
     num_epochs=100,
-    learning_rate=0.001,
+    learning_rate = float, 
     start_epoch: int = 0,
     patience: int = 20,
     checkpoint_freq: int = 10,
-    save_best: bool = True,
-    save_path: Optional[str] = None,
+    save_path: str = None,
 ) -> None:
     """
     Train a PyTorch model using the given data.
@@ -115,16 +111,15 @@ def train_pytorch_model(
     - val_loader: DataLoader for validation data.
     - train_dir (str): Directory to save training artifacts.
     - train_logger (logging.Logger): Logger for training progress.
-    - device (str): Device to use for training (default: "cpu").
-    - criterion: Loss criterion (default: nn.BCELoss()).
-    - optimizer (str): Optimizer choice, either "adam" or "sgd" (default: "adam").
-    - num_epochs (int): Number of training epochs (default: 100).
-    - learning_rate (float): Learning rate for the optimizer (default: 0.001).
-    - start_epoch (int): Starting epoch (default: 0).
-    - patience (int): Patience for early stopping (default: 20).
-    - checkpoint_freq (int): Frequency to save model checkpoints (default: 10).
-    - save_best (bool): Save the best model (default: True).
-    - save_path (Optional[str]): Path to save the best model (default: None).
+    - device (str): Device to use for training 
+    - criterion: Loss criterion 
+    - optimizer (str): Optimizer choice, either "adam" or "sgd"
+    - num_epochs (int): Number of training epochs
+    - learning_rate (float): Learning rate for the optimizer 
+    - start_epoch (int): Starting epoch 
+    - patience (int): Patience for early stopping 
+    - checkpoint_freq (int): Frequency to save model checkpoints
+    - save_path (str): Path to save the best model
 
     Returns:
     - None
@@ -133,13 +128,15 @@ def train_pytorch_model(
     early stopping and model checkpointing.
 
     """
+    if save_path is None:
+        save_path = train_dir
     if optimizer == "sgd":
         optimizer = optim.SGD(model.parameters(), lr=learning_rate)
     elif optimizer == "adam":
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     else:
         raise ValueError(
-            "Optimizer not supported. Please choose between 'adam' and 'sgd'."
+            f"Optimizer {optimizer} not supported. Please choose between 'adam' and 'sgd'."
         )
 
     train_losses = []
@@ -170,9 +167,8 @@ def train_pytorch_model(
         running_val_loss = 0.0
         with torch.no_grad():
             for batch_features, batch_labels in val_loader:
-                batch_features, batch_labels = batch_features.to(
-                    device
-                ), batch_labels.to(device)
+                batch_features= batch_features.to(device)
+                batch_labels = batch_labels.to(device)
                 outputs = model(batch_features)
                 loss = criterion(outputs.squeeze(), batch_labels.float())
                 running_val_loss += loss.item()
@@ -189,12 +185,7 @@ def train_pytorch_model(
         if average_val_loss < best_val_loss:
             best_val_loss = average_val_loss
             epochs_without_improvement = 0
-            if save_best:
-                if not save_path:
-                    raise ValueError(
-                        "Please provide a save_path to save the best model."
-                    )
-                save_model(model, run_folder=save_path, only_weights=True)
+            save_model(model, run_folder=save_path, only_weights=True)
         else:
             epochs_without_improvement += 1
             if epochs_without_improvement >= patience:
@@ -210,5 +201,5 @@ def train_pytorch_model(
             "Try adjusting the hyperparameters to find the best model.",
         )
 
-    with open(train_dir / "loss.yaml", "w") as f:
+    with open(f"{train_dir}/loss.yaml", "w") as f:
         yaml.dump({"train_loss": train_losses, "val_loss": val_losses}, f)

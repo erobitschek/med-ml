@@ -24,7 +24,7 @@ A repository to develop code workflows for to analyze medical data to improve he
    ```shell
    conda activate med-ml
    ```
-To run the analysis you will need a config file like the `experiment_config_example.py` file. Ensure that the variables like the path to the data is correctly specified in this file. 
+To run the analysis you will need a config file like the `experiment_config_example.py` file. Ensure that the variables like the path to the data are correctly specified in this file. 
 
 ## Usage
 
@@ -71,7 +71,7 @@ To run other analysis with other models, make a new config file with a similar f
 ```
 
 ---
-### To implement
+### To Implement
 This repository is a work in progress and will be updated regularly. I am currently working on: 
 - Mini batch gradient descent 
 - Add lightgbm model

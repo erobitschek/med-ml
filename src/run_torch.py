@@ -1,24 +1,29 @@
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import yaml
-from utils import set_seed, setup_logger
-from data import get_dataloaders
-from models import torchLogisticRegression
-from predict import predict_from_torch, save_predictions_to_file
-from eval import evaluate_predictions, save_evaluation_summary
-from configs.experiment_config_example import Config
-import numpy.typing as npt
 
-def run_torch(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: npt.ArrayLike, test_set: npt.ArrayLike, train_mode: str, model_eval: bool=True):
+from configs.config_scaffold import TrainMode
+from configs.experiment_config_example import RunConfig
+from data import get_dataloaders
+from eval import evaluate_predictions, save_evaluation_summary
+from models import TorchLogisticRegression
+from predict import predict_from_torch, save_predictions_to_file
+from train import train_pytorch_model
+from utils import load_model, setup_logger, setup_training_dir
+from vis import plot_loss
+
+
+def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set: npt.ArrayLike, test_set: npt.ArrayLike, train_mode: str, model_eval: bool=True):
     """
     Trains, loads, and evaluates a model using PyTorch.
 
     Parameters:
-    - config (Config): Configuration object containing runtime settings and model parameters.
+    - config (Config): RunConfiguration object containing runtime settings and model parameters.
     - run_dir (str): Directory to save and retrieve models and logs.
-    - train_set (DataSet): Training dataset object with attributes X and y.
-    - val_set (DataSet): Validation dataset object with attributes X and y.
-    - test_set (DataSet): Test dataset object with attributes X and y.
+    - train_set (DataSet): Training dataset object with attributes x and y.
+    - val_set (DataSet): Validation dataset object with attributes x and y.
+    - test_set (DataSet): Test dataset object with attributes x and y.
     - train_mode (str): Either "train" for training or "load" for loading pre-trained model.
     - model_eval (bool): If True, evaluate the model on the test set.
 
@@ -32,7 +37,8 @@ def run_torch(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: n
     - This function is intended for models using the PyTorch library.
     - Ensure the correct dependencies are imported when using different functionalities.
     """
-    set_seed()
+    if val_set is None: 
+        raise ValueError("A validation set is required for the PyTorch model implementation. Adjust split ratios.")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
 
@@ -44,28 +50,21 @@ def run_torch(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: n
         batch_size=config.model.batch_size,
     )
 
-    if train_mode == "train":  # FUTURE: implement 'resume' option
-        from utils import get_training_dir
-        from train import train_pytorch_model
-        from vis import plot_loss
-
-        train_dir = get_training_dir(
+    train_dir = setup_training_dir(
             dataset_name=config.dataset.name,
             model_name=config.model.name,
             run_name=config.run_name,
-            resume_training=config.resume_training,
+            train_mode=train_mode,
         )
-        print("The log is created at: ", train_dir)
-        train_logger = setup_logger(
-            run_folder=train_dir, log_file=f"{config.run_name}_train.log"
-        )
-        input_dim = train_set.X.shape[1]  # (Number of features)
-        model = torchLogisticRegression(input_dim=input_dim).to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.model.learning_rate)
+    print("The training log is created at: ", train_dir)
+    train_logger = setup_logger(
+            run_folder=train_dir, log_file=f"{config.run_name}_train.log")
+    
+    if train_mode == "train":  # TODO: implement 'resume' option
+        input_dim = train_set.x.shape[1]  # (Number of features)
+        model = TorchLogisticRegression(input_dim=input_dim).to(device)
         logger.info("Training pytorch implementation of model...")
         logger.info(f"Model type is: {type(model)}")
-        num_epochs = config.model.epochs
-        learning_rate = config.model.learning_rate
 
         train_pytorch_model(
             train_dir=train_dir,
@@ -76,10 +75,9 @@ def run_torch(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: n
             optimizer="adam",
             device=device,
             start_epoch=0,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate,
+            num_epochs=config.model.epochs,
+            learning_rate=config.model.learning_rate,
             patience=50,
-            save_best=True,
             save_path=run_dir,
         )
 
@@ -89,13 +87,14 @@ def run_torch(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: n
         plot_loss(train_losses, val_losses, out_dir=train_dir)
 
     elif train_mode == "load":
-        from utils import load_model
+        input_dim = train_set.x.shape[1]
+        model = TorchLogisticRegression(input_dim=input_dim).to(device)
+        model = load_model(run_dir, model=model)
+        logger.info(f"Model weights loaded from previous training")
 
-        input_dim = train_set.X.shape[1]
-        model = torchLogisticRegression(input_dim=input_dim).to(device)
-        model = load_model(run_dir, model=model)  # add weights to model
-        logger.info(f"Model loaded from previous training")
-
+    elif train_mode == 'resume':
+        raise NotImplementedError("Resume training is not implemented yet.")
+        
     if model_eval:
         logger.info(f"Predicting on test set...")
         predictions = predict_from_torch(
@@ -123,9 +122,8 @@ def run_torch(config: Config, run_dir: str, train_set: npt.ArrayLike, val_set: n
             predictions=predictions, true_labels=test_set.y
         )
         save_evaluation_summary(
-            true_labels=test_set.y,
-            predicted_probs=probabilities,
+            metric_dict=evaluation,
             run_folder=run_dir,
-            filename=f"evaluation_summary.txt",
+            filename=f"evaluation_summary.json",
         )
         logger.info(f"Saved evaluation summary.")

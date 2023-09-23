@@ -1,18 +1,22 @@
-import os
-import sys
-import importlib.util
-from pathlib import Path
-import torch
-import torch.nn as nn
-import random
-import numpy as np
-import numpy.typing as npt
-import logging
 import datetime
+import importlib.util
+import logging
+import os
+import random
+import shutil
+import sys
+from pathlib import Path
 from typing import Optional
 
+import numpy as np
+import numpy.typing as npt
+import torch
+import torch.nn as nn
 
-def load_config(path): 
+from configs.config_scaffold import TrainMode
+
+
+def load_config(path):
     spec = importlib.util.spec_from_file_location("config_module", path)
     config_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(config_module)
@@ -22,7 +26,7 @@ def load_config(path):
 
 def set_seed():
     """
-    Use this function to set a seed before model training.
+    Use this function to make the execution deterministic before model training.
     """
 
     seed = 3
@@ -38,7 +42,30 @@ def set_seed():
     os.environ["PYTHONHASHSEED"] = str(seed)
 
 
-def get_run_dir(dataset_name: str, model_name: str, run_name: str) -> Path:
+def remove_dir_contents(dir_path: str) -> None:
+    print(f"Removing contents of {dir_path}")
+    for item in os.listdir(dir_path):
+        item_path = os.path.join(dir_path, item)
+        if os.path.isfile(item_path):
+            os.remove(item_path)
+        elif os.path.isdir(item_path):
+            shutil.rmtree(item_path)
+
+
+def get_path(dataset_name: str, model_name: str, run_name: str, training: bool = False):
+    """
+    Function used to create the directory path for a given dataset - model - run_name configuration, or a subfolder of that directory for training.
+    """
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    parent_directory = os.path.dirname(current_directory)
+    path = os.path.join(
+        parent_directory, "out", "results", dataset_name, model_name, run_name)
+    if training: 
+        path = os.path.join(path, "training")
+    return path
+
+
+def setup_output_dir(dataset_name: str, model_name: str, run_name: str, training: bool = False) -> Path:
     """
     Function used to create an output directory for a given dataset - model - run_name configuration.
 
@@ -50,102 +77,40 @@ def get_run_dir(dataset_name: str, model_name: str, run_name: str) -> Path:
       Name of the model.
     run_name: str
       Name of the run.
-    resume_training: bool
-      if True, resume past training; if False, training from scratch
 
     Returns
     -------
     Path to run directory
     """
 
-    path = (
-        Path(__file__).parent.parent
-        / "out"
-        / "results"
-        / dataset_name
-        / model_name
-        / run_name
-    )
+    path = get_path(dataset_name, model_name, run_name, training=training)
 
-    try:
-        path.mkdir(parents=True)
-    except FileExistsError:
-        yn = input(
-            f"Warning: this run already exists. Do you want to overwrite it? [y/n]"
-        )
-
+    if os.path.exists(path):
+        yn = input(f"Warning: Run already exists. Overwrite it? [y/N]")
         if yn.lower() == "y":
-            for file in os.listdir(path):
-                (path / file).unlink()
-
+            remove_dir_contents(path)
         else:
-            print("Loading existing directory path")
-            #sys.exit(1)
+            print('Aborting run.')
+            sys.exit(1)
+
+    else: 
+        Path(path).mkdir(parents=True)
 
     return path
 
 
-def get_training_dir(
-    dataset_name: str, model_name: str, run_name: str, resume_training: bool = False
-) -> Path:
-    """
-    Function used to create an output directory for a given dataset - model - run_name configuration.
+def setup_training_dir(
+    dataset_name: str, model_name: str, run_name: str, train_mode: str
+) -> str:
+    if train_mode == "train":
+        path = setup_output_dir(dataset_name, model_name, run_name, training = True)
 
-    Parameters
-    ----------
-    dataset_name: str
-      Name of the dataset used for training.
-    model_name: str
-      Name of the model.
-    run_name: str
-      Name of the run.
-    resume_training: bool
-      if True, resume past training; if False, training from scratch
-
-    Returns
-    -------
-    Path to run directory
-    """
-
-    path = (
-        Path(__file__).parent.parent
-        / "out"
-        / "results"
-        / dataset_name
-        / model_name
-        / run_name
-        / "training"
-    )
-
-    try:
-        path.mkdir(parents=True)
-    except FileExistsError:
-        if resume_training:
-            # Case #1: resume training existing model
-            yn = input(
-                "Warning: this run already exists. Do you want to resume training? [y/n]"
-            )
-
-            if yn.lower() != "y":
-                print("Abort run")
-                sys.exit(1)
-
-        else:
-            # Case #2: rerun existing model from scratch (default case)
-            yn = input(
-                "Warning: this run already exists. Do you want to overwrite it? [y/n]"
-            )
-
-            if yn.lower() == "y":
-                for file in os.listdir(path):
-                    (path / file).unlink()
-
-            else:
-                print("Loading existing directory path")
-                sys.exit(1)
+    elif train_mode.isin(["resume", "load"]):
+        path = get_path(dataset_name, model_name, run_name, training=True)
+        if not os.path.exists(path):
+            raise FileNotFoundError("Training directory {path} not found")
 
     return path
-
 
 def setup_logger(run_folder: str, log_file: str = "run.log", level=logging.INFO):
     """
@@ -182,30 +147,8 @@ def setup_logger(run_folder: str, log_file: str = "run.log", level=logging.INFO)
 
     logger.info(f"Logger initialized on {datetime.datetime.now()}")
     logger.info("Starting logging...")
-        
 
     return logger
-
-
-def ensure_directory_exists(dir_path: str) -> None:
-    """
-    Ensure that the specified directory exists. If it doesn't, create it along with any necessary parent directories.
-
-    Parameters
-    ----------
-    dir_path : str
-        Path to the directory that needs to be checked and potentially created.
-
-    Returns
-    -------
-    None
-
-    Example
-    -------
-    >>> ensure_directory_exists('./plots/subfolder')
-    """
-    path = Path(dir_path)
-    path.mkdir(parents=True, exist_ok=True)
 
 
 def save_model(model: nn.Module, run_folder: str, only_weights: bool = True):
@@ -253,10 +196,11 @@ def load_model(run_folder: str, model: Optional[nn.Module] = None):
         The loaded or updated PyTorch model.
     """
     if model:
-        assert os.path.exists(f"{run_folder}/weights.pth"), "Weights file not found"
+        if not os.path.exists(f"{run_folder}/weights.pth"):
+            raise FileNotFoundError("Weights file not found")
         model.load_state_dict(torch.load(f"{run_folder}/weights.pth"))
         return model
-    else:  # save the whole model and the weights too
-        assert os.path.exists(f"{run_folder}/model.pth"), "Model file not found"
-        loaded_model = torch.load(f"{run_folder}/model.pth")
-        return loaded_model
+    else:
+        if not os.path.exists(f"{run_folder}/model.pth"):
+            raise FileNotFoundError("Model file not found")
+        return torch.load(f"{run_folder}/model.pth")

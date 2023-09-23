@@ -1,5 +1,8 @@
-from typing import List, Optional, Union
 from pathlib import Path
+from typing import Optional, Union
+
+import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 
@@ -9,7 +12,7 @@ def predict_from_torch(
     data_loader: torch.utils.data.DataLoader,
     device: torch.device,
     return_probabilities: bool = False,
-) -> List[Union[int, float]]:
+) -> npt.ArrayLike:
     """
     Use the provided model to predict labels for data in the data_loader.
 
@@ -52,14 +55,14 @@ def predict_from_torch(
 
             all_predictions.extend(predictions)
 
-    return all_predictions
+    return np.array(all_predictions)
 
 
 def save_predictions_to_file(
-    predictions: List[int],
+    predictions: npt.ArrayLike,
     run_folder: Union[str, Path],
     filename: str,
-    probabilities: Optional[List[float]] = None,
+    probabilities: Optional[npt.ArrayLike] = None,
 ) -> None:
     """
     Save predictions and optionally their corresponding probabilities to a file in the specified directory.
@@ -86,7 +89,8 @@ def save_predictions_to_file(
     output_path = Path(run_folder) / filename
     with open(output_path, "w") as f:
         for idx, label in enumerate(predictions):
-            if probabilities is not None:
-                f.write(f"{label},{probabilities[idx]}\n")
-            else:
+            if probabilities is None:
                 f.write(f"{label}\n")
+            else:
+                f.write(f"{label},{probabilities[idx]}\n")
+

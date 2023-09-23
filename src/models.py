@@ -2,7 +2,7 @@ import torch as torch
 import torch.nn as nn
 
 
-class torchLogisticRegression(nn.Module):
+class TorchLogisticRegression(nn.Module):
     """
     A simple logistic regression implementation using PyTorch.
 
@@ -31,9 +31,10 @@ class torchLogisticRegression(nn.Module):
     """
 
     def __init__(self, input_dim):
-        super(torchLogisticRegression, self).__init__()
+        super(TorchLogisticRegression, self).__init__()
         self.input_dim = input_dim
-        self.linear = nn.Linear(input_dim, 1)
+        self.output_dim = 1
+        self.linear = nn.Linear(input_dim, self.output_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
