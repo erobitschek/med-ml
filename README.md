@@ -1,11 +1,19 @@
 # med-ml
-A repository to develop code workflows for to analyze medical data to improve healthcare, for example by extracting insights that inform population health and health policy. 
+This repository is dedicated to crafting robust code workflows for medical data analysis. 
+
+> Like many scientists, I'm used to analyzing data in notebooks (cue all my software engineering friends shaking their heads in dismay 😅). 
+
+>While I managed to make that approach work for many use cases, including from analysis of genes 🧬, mobile phone data 📱, survey responses 📊 and policy documents 📜—this repository is my chance to give learning how to code a bit more "properly" a shot. 
+
+>I hope filling such knowledge gaps amplifies my ability to make meaningful strides in healthcare by enhancing my technical capabilities to extract actionable insights from data for personalized and population health or to inform health policy decisions. 🚀 🏥 🖥️ 
+
 
 ## Table of Contents
 - [Setup](#setup)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
 - [Notes](#notes)
+   -[To Implement](#to-implement)
 
 ## Setup
 1. Clone the repository:
@@ -24,28 +32,24 @@ A repository to develop code workflows for to analyze medical data to improve he
    ```shell
    conda activate med-ml
    ```
-To run the analysis you will need a config file like the `experiment_config_example.py` file. Ensure that the variables like the path to the data are correctly specified in this file. 
 
 ## Usage
 
 ### Data
 
- Many medical/EHR datasets have access restrictions for ethical and privacy reasons. This repository will be a workspace to create generalizable model frameworks to use on such data using simulated or 'synthetic' data. Obviously even with access to medical record datasets, none of the real data will ever interact directly with this repository as it is private and access is and should be tightly controlled. 
+This repo focuses on frameworks for medical/EHR datasets using synthetic data due to data access and privacy constraints. Real medical datasets, given their sensitivity, won't interact with this repository.
 
 ### Run
 
-Run a command to activate the python environment and run the `run_analysis.py` script to reproduce the analysis.
-
-To reproduce the analysis run the following<sup>1</sup>: 
+After activating the environment, execute the run_analysis.py script from the `src` directory with the desired config file.
 
 ```shell
-conda activate med-ml
-python run_analysis.py --config configs/experiment_config_example.py --setup --train_mode=train 
+python run_analysis.py --config=configs/experiment_config_example.py --train_mode=train
 ```
 
-This will save logs, results, and other outputs related to the run to a `run_dir` in the `out` dir specified by  ` \ results \ <dataset name> \ <model_name> \ <run_name>`
+Outputs (logs, results, etc.) are saved in a structured directory under out.
 
-To run other analysis with other models, make a new config file with a similar format to the `experiment_config_example.py` (there are two example configs in the config folder)
+To explore other models, craft a new config file mirroring `experiment_config_example.py`. Consult `config_scaffold.py` for possible inputs. Ensure that the variables like the path to the data are correctly specified in this file. 
 
 
 ## Project Structure
@@ -55,7 +59,8 @@ To run other analysis with other models, make a new config file with a similar f
 ├── out
 ├── src
 │   ├── configs
-│   │   └── experiment_config.py
+│   │   └── config_scaffold.py
+│   │   └── experiment_config.py files
 │   ├── utils.py 
 |   ├── data.py
 │   ├── models.py
@@ -71,38 +76,53 @@ To run other analysis with other models, make a new config file with a similar f
 ```
 
 ---
-### To Implement
-This repository is a work in progress and will be updated regularly. I am currently working on: 
-- Mini batch gradient descent 
-- Add lightgbm model
-- Adding other evaluation metrics
-- Plotting of ROC
-- Add code for confusion matrix
-- For pytorch models: 
-   - cross validation 
-   - grid search 
-   - regularization
-- Implementing more complex models (e.g. RNNs) but this also requires additional preprocessing of the data as timeseries, and a different target question
-- Methods for explainability and interpretability
----
+## Ongoing Work
+This repository serves as a dynamic space for both **analysis** and **development** learning and enhancements.
+
+## Development
+
+The development updates emphasize refining software engineering practices for enhanced maintainability and robustness.
+
+| **Completed** | **In Progress** | **Future** |
+|:-------------|:---------------|:----------|
+| Incorporation of Python `dataclasses` & `enums` | Docstring format revision | Impressing my software engineering friends 😄 |
+| Adopted `isort` for imports & utilized `typing` for type hints | Type hint validation with `mypi` | |
+| Workflow streamlined with config files; see `config_scaffold.py` for reference | Run mode enhancements: introducing `resume` for `train_mode` and new flows (`preprocess` & `split`) for `data_state` | |
+| Config files serve as analysis summaries | | |
+| Automation in directory management, file organization, and output generation | | |
+| Integrated `logging` module for efficient logging | | |
+
+## Analysis
+
+Analysis updates focus on broadening the model repertoire, enhancing preprocessing, and fine-tuning feature engineering.
+
+| **Completed** | **In Progress** | **Future** |
+|:-------------|:---------------|:----------|
+| Developed a modular code framework | Introducing the lightgbm model | Advanced preprocessing techniques for longitudinal data |
+| Comprehensive pipeline from data ingestion to model evaluation | Chunk-wise data preprocessing for efficiency | Expansion of evaluation metrics |
+| Implemented logistic regression using PyTorch & sklearn | Integration of mini batch gradient descent | For PyTorch models: diving into cross validation, grid search, and regularization |
+| Rolled out grid search for sklearn models | Incorporation of confusion matrix visualization | Designing complex models (like RNNs) which would necessitate timeseries preprocessing |
+| Visualization tools for training & validation losses | ROC curve plotting tools | Delving into methods for model explainability & interpretability |
+| Detailed evaluation summaries for all models | | |
 
 
 ## Notes
 
-#### ICD-10 Codes
-To make this generated data more relevant, I will draw the medical codes from actual "International Statistical Classification of Diseases and Related Health Problems 10th Revision" or "ICD-10" codes commonly used in medical practice for diagnosis. Some browsers for this type of data can be found [from WHO](https://icd.who.int/browse10/2019/en) and [from the Icelandic DoH](https://skafl.is/). (I'm a partciular fan of the Icelandic one).
+### ICD-10 Codes
+I'm utilizing real "ICD-10" codes, used in medical diagnosis, to enhance the relevancy of our generated data. I recommend exploring ICD-10 code browsers like [WHO's version](https://icd.who.int/browse10/2019/en) and the [Icelandic DoH's variant](https://skafl.is/) – I personally prefer the latter. (Go Iceland!)
 
-#### Initial question for model testing
- *Can we predict the biological sex of the patient based on the signal from the codes in their medical record?*
- - This task was chosen for its relative interpretability and simplicity as a good 'low hanging fruit' prediction task, and because I could a priori choose medical features related to sex to model in the dataset (e.g. birth, prostate issues, etc).
- - In my synthetic data I can titrate that predictive signal in the generated records of the patients in a way that loosely mimics real health records, because I can ensure that only female (male) generated patients get codes associated with female (male) biology, and can adjust what proportion of the total codes are sex-related. 
-   - This will faciliate downstream testing and sanity checks of some interpretability and explanability methods, as I should be able to recover some of these features as most predictive and relevant later.
- 
- ### Other questions for model testing
- - As a later task, I will also want to predict more complex and time dependent conditions so I will also specify target codes based on a common health condition with that in mind. 
- - I am currently reviewing the literature re: longitudinal analysis (e.g. with transformers), respresentational methods (e.g. graph neural networks) and interpretability and explanability techniques in order to be able to apply these methods appropriately.
+### Primary Model Testing Question
+**Can patient biological sex be predicted from their medical record codes?**
+- This straightforward prediction task offers clarity and allows us to include sex-related medical features (e.g., childbirth, prostate concerns) in our dataset.
+- In my synthetic data, I can control the predictiveness of medical codes to resemble real-world health records. For instance, ensuring female-specific codes appear only for generated female patients.
+  - This aids in evaluating certain interpretability methods, as I expect to identify these features as significant predictors later.
 
- ### Recent work I find particularly cool 
+### Additional Model Testing Avenues
+- Future goals include predicting complex, time-sensitive health conditions. Specific target codes will be chosen reflecting prevalent health conditions.
+- I'm delving into literature on longitudinal analysis, representational techniques, and interpretability methods to harness them effectively.
+
+
+ ### Recent Work I Find Cool 
  - Prediction of future disease states via health trajectories in [pancreatic cancer](https://www.nature.com/articles/s41591-023-02332-5) 
  - Using graph neural networks to encode underlying relationships like [family history](https://arxiv.org/abs/2304.05010) to predict disease risk
  - Real time prediction of disease risk as in [acute kidney disease](https://www.nature.com/articles/s41746-020-00346-8), or to manage [ICU circulatory failure](https://www.nature.com/articles/s41591-020-0789-4).
