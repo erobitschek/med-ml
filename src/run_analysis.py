@@ -3,11 +3,13 @@ import sys
 
 from configs.config_scaffold import (DataState, ModelFramework, RunConfig,
                                      TrainMode)
-from data import (df_to_array, get_x_y, load_data, save_vars_to_pickle,
-                  split_data_train_test, split_data_train_test_val)
+from data import (df_to_array, get_x_y, load_data, prep_data_for_modelling,
+                  save_vars_to_pickle, split_data_train_test,
+                  split_data_train_test_val)
 from run_simple import run_simple
 from run_torch import run_torch
-from utils import load_config, set_seed, setup_logger, setup_output_dir
+from utils import (get_path, load_config, set_seed, setup_logger,
+                   setup_output_dir)
 
 
 def parse_args():
@@ -42,11 +44,25 @@ def main():
 
     set_seed()
 
-    run_dir = setup_output_dir(
-        run_name=config.run_name,
-        dataset_name=config.dataset.name,
-        model_name=config.model.name,
-    )
+    if args.train_mode == "train":
+        # either create or overwrite the run directory
+        run_dir = setup_output_dir(
+            run_name=config.run_name,
+            dataset_name=config.dataset.name,
+            model_name=config.model.name,
+        )
+    elif args.train_mode == "load":
+        # load the path to the previous run directory
+        run_dir = get_path(
+            run_name=config.run_name,
+            dataset_name=config.dataset.name,
+            model_name=config.model.name,
+            training=False,
+        )
+    else:
+        raise ValueError(
+            f"Got train mode {args.train_mode}; supported values are: train or load"
+        )
 
     print(f"Run dir is: {run_dir}")
 
@@ -54,75 +70,38 @@ def main():
 
     # TODO: implement loading from 'preprocessed' and 'split' data states
     if args.data_state == "raw":
-        logger.info(f"Loading data")
-        raw = load_data(config.dataset.path, filter_cols=["ID", "CODE", "SEX"])
-        x, y = get_x_y(
-            raw,
-            target=config.dataset.target,
-            threshold=config.dataset.feature_threshold,
-            encoding=config.dataset.encoding,
+        train_set, test_set, val_set = prep_data_for_modelling(
+            config=config, run_dir=run_dir, data_state=args.data_state, logger=logger
         )
-        logger.info(f"Data loaded")
-        logger.info(f"Converting target df to array")
-
-        x, y, meta = df_to_array(x, y)
-
-        logger.info(f"Extracting row, column metadata from feature array")
-        logger.info(f"Saving metadata to {run_dir}")
-
-        save_vars_to_pickle(run_dir, meta.ids, "individual_ids")
-        save_vars_to_pickle(run_dir, meta.feature_names, "feature_names")
-
-        logger.info(
-            f"The split ratios for the dataset are: {config.dataset.split_ratios}"
+    else:
+        raise ValueError(
+            f"Got data state {args.data_state}; supported values are: raw."
         )
-
-        if config.dataset.split_ratios.val == 0:
-            val_set = None
-            train_set, test_set = split_data_train_test(
-                x,
-                y,
-                split_ratios=config.dataset.split_ratios,
-            )
-            logger.info(
-                f"Dataset shapes (train, test): {train_set.x.shape}, {test_set.x.shape}"
-            )
-
-        else:
-            train_set, test_set, val_set = split_data_train_test_val(
-                x,
-                y,
-                split_ratios=config.dataset.split_ratios,
-            )
-            logger.info(
-                f"Dataset shapes (train, test, val): {train_set.x.shape}, {test_set.x.shape}, {val_set.x.shape}"
-            )
-
-        if config.model.framework == ModelFramework.SKLEARN:
-            run_simple(
-                config=config,
-                run_dir=run_dir,
-                train_set=train_set,
-                val_set=val_set,
-                test_set=test_set,
-                train_mode=args.train_mode,
-                model_eval=args.model_eval,
-            )
-        elif config.model.framework == ModelFramework.PYTORCH:
-            run_torch(
-                config=config,
-                run_dir=run_dir,
-                train_set=train_set,
-                val_set=val_set,
-                test_set=test_set,
-                train_mode=args.train_mode,
-                model_eval=args.model_eval,
-            )
-        else:
-            supported_frameworks = [f.name for f in ModelFramework]
-            raise ValueError(
-                f"Got the framework {config.model.framework}; supported values are: {supported_frameworks}."
-            )
+    if config.model.framework == ModelFramework.SKLEARN:
+        run_simple(
+            config=config,
+            run_dir=run_dir,
+            train_set=train_set,
+            val_set=val_set,
+            test_set=test_set,
+            train_mode=args.train_mode,
+            model_eval=args.model_eval,
+        )
+    elif config.model.framework == ModelFramework.PYTORCH:
+        run_torch(
+            config=config,
+            run_dir=run_dir,
+            train_set=train_set,
+            val_set=val_set,
+            test_set=test_set,
+            train_mode=args.train_mode,
+            model_eval=args.model_eval,
+        )
+    else:
+        supported_frameworks = [f.name for f in ModelFramework]
+        raise ValueError(
+            f"Got the framework {config.model.framework}; supported values are: {supported_frameworks}."
+        )
 
 
 if __name__ == "__main__":

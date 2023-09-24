@@ -6,8 +6,7 @@ from joblib import dump, load
 from sklearn.linear_model import LogisticRegression as skLogisticRegression
 
 from configs.experiment_config_example import RunConfig
-from eval import evaluate_predictions, save_evaluation_summary
-from predict import save_predictions_to_file
+from eval import run_eval
 from train import train_simple_model
 from utils import setup_logger
 
@@ -28,16 +27,16 @@ def run_simple(
     - config (Config): RunConfiguration object containing runtime settings and model parameters.
     - run_dir (str): Directory to save and retrieve models and logs.
     - train_set (DataSet): Training dataset object with attributes x and y.
-    - val_set (DataSet): Validation dataset object with attributes x and y.
     - test_set (DataSet): Test dataset object with attributes x and y.
     - train_mode (str): Either "train" for training or "load" for loading pre-trained model.
+    - val_set (DataSet): Validation dataset object with attributes x and y. (optional)
     - model_eval (bool): If True, evaluate the model on the test set.
 
     Returns:
     - None
 
     Notes:
-    - This function is intended for models using the scikit-learn library.
+    - This function is intended for testing simple, non-deep learning models.
     """
     logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
     model_path = f"{run_dir}/{config.model.name}_{config.model.framework}_model.joblib"
@@ -80,7 +79,7 @@ def run_simple(
         else:
             raise FileNotFoundError("Model file not found")
 
-    elif train_mode == 'resume':
+    elif train_mode == "resume":
         raise NotImplementedError("Resume training is not implemented yet.")
 
     if model_eval:
@@ -90,23 +89,10 @@ def run_simple(
             model.predict_proba(test_set.x)[:, 1],
         )  # this assumes binary classification
 
-        logger.info(
-            f"The first 5 predictions and their probabilities are: {predictions[:5], probabilities[:5]}"
-        )
-        logger.info(f"Saving predictions to {run_dir}")
-        save_predictions_to_file(
+        run_eval(
             predictions=predictions,
             probabilities=probabilities,
-            run_folder=run_dir,
-            filename=f"predictions.txt",
+            true_labels=test_set.y,
+            run_dir=run_dir,
+            logger=logger,
         )
-        logger.info(f"Evaluating model predictions")
-        evaluation = evaluate_predictions(
-            predictions=predictions, true_labels=test_set.y
-        )
-        save_evaluation_summary(
-            metric_dict=evaluation,
-            run_folder=run_dir,
-            filename=f"evaluation_summary.json",
-        )
-        logger.info(f"Saved evaluation summary.")

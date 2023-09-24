@@ -66,23 +66,6 @@ def train_simple_model(
         with open(f"{run_dir}/grid_search.yaml", "w") as f:
             yaml.dump({f"best_params": grid.best_params_}, f)
 
-    y_pred = model.predict(x_test)
-
-    acc = accuracy_score(y_pred, y_test)
-    bal_acc = balanced_accuracy_score(y_pred, y_test)
-    print(f"Test Acc: {acc}")
-    print(f"Balanced Acc: {bal_acc}")
-    print(f"Precision: {precision_score(y_test, y_pred, average='weighted')}")
-    print(f"Recall: {recall_score(y_test, y_pred, average='weighted')}")
-    print(f"F1: {f1_score(y_test, y_pred, average='weighted')}")
-
-    if max(y_test) == 1:
-        y_pred_prob = model.predict_proba(x_test)
-        auroc = roc_auc_score(y_true=y_test, y_score=y_pred_prob[:, 1])
-        auprc = average_precision_score(y_test, y_pred_prob[:, 1])
-        print(f"AUROC: {auroc}")
-        print(f"AUPRC: {auprc}")
-
     return model
 
 
@@ -91,7 +74,7 @@ def train_pytorch_model(
     train_loader,
     val_loader,
     train_dir: str,
-    train_logger: logging.Logger,
+    logger: logging.Logger,
     device="cpu",
     criterion=nn.BCELoss(),
     optimizer="adam",
@@ -110,7 +93,7 @@ def train_pytorch_model(
     - train_loader: DataLoader for training data.
     - val_loader: DataLoader for validation data.
     - train_dir (str): Directory to save training artifacts.
-    - train_logger (logging.Logger): Logger for training progress.
+    - logger (logging.Logger): Logger for training progress.
     - device (str): Device to use for training 
     - criterion: Loss criterion 
     - optimizer (str): Optimizer choice, either "adam" or "sgd"
@@ -177,7 +160,7 @@ def train_pytorch_model(
         val_losses.append(average_val_loss)
 
         if epoch % checkpoint_freq == checkpoint_freq - 1:
-            train_logger.info(
+            logger.info(
                 f"Epoch [{epoch+1}/{num_epochs}] - Train Loss: {average_train_loss:.4f} | Val Loss: {average_val_loss:.4f}"
             )
 
@@ -189,8 +172,8 @@ def train_pytorch_model(
         else:
             epochs_without_improvement += 1
             if epochs_without_improvement >= patience:
-                if train_logger:
-                    train_logger.info("Early stopping triggered.")
+                if logger:
+                    logger.info("Early stopping triggered.")
                 else:
                     print("Early stopping triggered.")
                 break

@@ -6,15 +6,23 @@ import yaml
 from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from data import get_dataloaders
-from eval import evaluate_predictions, save_evaluation_summary
+from eval import run_eval
 from models import TorchLogisticRegression
-from predict import predict_from_torch, save_predictions_to_file
+from predict import predict_from_torch
 from train import train_pytorch_model
 from utils import load_model, setup_logger, setup_training_dir
 from vis import plot_loss
 
 
-def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set: npt.ArrayLike, test_set: npt.ArrayLike, train_mode: str, model_eval: bool=True):
+def run_torch(
+    config: RunConfig,
+    run_dir: str,
+    train_set: npt.ArrayLike,
+    val_set: npt.ArrayLike,
+    test_set: npt.ArrayLike,
+    train_mode: str,
+    model_eval: bool = True,
+):
     """
     Trains, loads, and evaluates a model using PyTorch.
 
@@ -37,8 +45,10 @@ def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set
     - This function is intended for models using the PyTorch library.
     - Ensure the correct dependencies are imported when using different functionalities.
     """
-    if val_set is None: 
-        raise ValueError("A validation set is required for the PyTorch model implementation. Adjust split ratios.")
+    if val_set is None:
+        raise ValueError(
+            "A validation set is required for the PyTorch model implementation. Adjust split ratios."
+        )
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
 
@@ -51,15 +61,12 @@ def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set
     )
 
     train_dir = setup_training_dir(
-            dataset_name=config.dataset.name,
-            model_name=config.model.name,
-            run_name=config.run_name,
-            train_mode=train_mode,
-        )
-    print("The training log is created at: ", train_dir)
-    train_logger = setup_logger(
-            run_folder=train_dir, log_file=f"{config.run_name}_train.log")
-    
+        dataset_name=config.dataset.name,
+        model_name=config.model.name,
+        run_name=config.run_name,
+        train_mode=train_mode,
+    )
+
     if train_mode == "train":  # TODO: implement 'resume' option
         input_dim = train_set.x.shape[1]  # (Number of features)
         model = TorchLogisticRegression(input_dim=input_dim).to(device)
@@ -68,7 +75,7 @@ def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set
 
         train_pytorch_model(
             train_dir=train_dir,
-            train_logger=train_logger,
+            logger=logger,
             model=model,
             train_loader=train_loader,
             val_loader=val_loader,
@@ -77,7 +84,7 @@ def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set
             start_epoch=0,
             num_epochs=config.model.epochs,
             learning_rate=config.model.learning_rate,
-            patience=50,
+            patience=config.model.patience,
             save_path=run_dir,
         )
 
@@ -92,9 +99,9 @@ def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set
         model = load_model(run_dir, model=model)
         logger.info(f"Model weights loaded from previous training")
 
-    elif train_mode == 'resume':
+    elif train_mode == "resume":
         raise NotImplementedError("Resume training is not implemented yet.")
-        
+
     if model_eval:
         logger.info(f"Predicting on test set...")
         predictions = predict_from_torch(
@@ -106,24 +113,10 @@ def run_torch(config: RunConfig, run_dir: str, train_set: npt.ArrayLike, val_set
             device=device,
             return_probabilities=True,
         )
-
-        logger.info(
-            f"The first 5 predictions and their probabilities are: {predictions[:5], probabilities[:5]}"
-        )
-        logger.info(f"Saving predictions to {run_dir}")
-        save_predictions_to_file(
+        run_eval(
             predictions=predictions,
             probabilities=probabilities,
-            run_folder=run_dir,
-            filename=f"predictions.txt",
+            true_labels=test_set.y,
+            run_dir=run_dir,
+            logger=logger,
         )
-        logger.info(f"Evaluating model predictions")
-        evaluation = evaluate_predictions(
-            predictions=predictions, true_labels=test_set.y
-        )
-        save_evaluation_summary(
-            metric_dict=evaluation,
-            run_folder=run_dir,
-            filename=f"evaluation_summary.json",
-        )
-        logger.info(f"Saved evaluation summary.")
