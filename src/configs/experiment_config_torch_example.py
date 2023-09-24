@@ -8,6 +8,7 @@ config = RunConfig(
         batch_size=32,
         epochs=500,
         framework=ModelFramework.PYTORCH,
+        patience=50,
         param_grid= None,
     ),
     dataset=DatasetConfig(

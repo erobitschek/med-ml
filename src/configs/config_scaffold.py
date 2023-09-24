@@ -51,6 +51,7 @@ class ModelConfig:
     framework: ModelFramework = ModelFramework.SKLEARN
     max_iter: int = 500
     dropout_rate: float = 0.5
+    patience: int = 20
     param_grid: dict = None  # for grid search to find optimal model parameters
 
 
