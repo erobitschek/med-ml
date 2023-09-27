@@ -5,7 +5,7 @@ This repository is dedicated to crafting robust code workflows for medical data 
 
 >While I managed to make that approach work for many use cases, including from analysis of genes 🧬, mobile phone data 📱, survey responses 📊 and policy documents 📜—this repository is my chance to give learning how to code a bit more "properly" a shot. 
 
->I hope filling such knowledge gaps amplifies my ability to make meaningful strides in healthcare by enhancing my technical capabilities to extract actionable insights from data for personalized and population health or to inform health policy decisions. 🚀 🏥 🖥️ 
+>I hope filling such knowledge gaps amplifies my technical capabilities to extract actionable insights from data for personalized and population health or to inform health policy decisions. 🚀 🏥 🖥️ 
 
 
 ## Table of Contents
@@ -129,4 +129,5 @@ I'm utilizing real "ICD-10" codes, used in medical diagnosis, to enhance the rel
  - Combining econometrics and machine learning to evaluate [physician decision making](https://academic.oup.com/qje/article/137/2/679/6449024) and to assess health policies and standards (e.g. in the case of [breast cancer screening](https://economics.mit.edu/sites/default/files/2022-08/Screening%20and%20Selection-%20The%20Case%20of%20Mammograms.pdf))
  - Using machine learning methods to reduce disparities in underserved populations (e.g. in [pain reduction](https://www.nature.com/articles/s41591-020-01192-7))
  - Understanding unintended consequences of algorithms (e.g. how ML models can [predict race from medical imaging](https://www.thelancet.com/journals/landig/article/PIIS2589-7500(22)00063-2/fulltext)) or [racial biases](https://www.science.org/doi/10.1126/science.aax2342) to make the best and most fair models that enhance patient health.
+ - The work of Jon Kleinberg and Sendhil Mullainathan. For instance, how algorithms [affect the detection of discriminatioh](https://academic.oup.com/jla/article/doi/10.1093/jla/laz001/5476086) and explanatory vs prediction framing in [computational social science](https://www.nature.com/articles/s41586-021-03659-0)
 
