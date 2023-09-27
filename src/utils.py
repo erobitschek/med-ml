@@ -25,9 +25,7 @@ def load_config(path):
 
 
 def set_seed():
-    """
-    Use this function to make the execution deterministic before model training.
-    """
+    """Make the execution deterministic before model training."""
 
     seed = 3
     random.seed(seed)
@@ -43,6 +41,12 @@ def set_seed():
 
 
 def remove_dir_contents(dir_path: str) -> None:
+    """
+    Removes all contents (files and sub-directories) from a specified directory.
+
+    Args:
+        dir_path (str): Path to the directory from which contents will be removed.
+    """
     print(f"Removing contents of {dir_path}")
     for item in os.listdir(dir_path):
         item_path = os.path.join(dir_path, item)
@@ -52,35 +56,45 @@ def remove_dir_contents(dir_path: str) -> None:
             shutil.rmtree(item_path)
 
 
-def get_path(dataset_name: str, model_name: str, run_name: str, training: bool = False):
+def get_path(
+    dataset_name: str, model_name: str, run_name: str, training: bool = False
+) -> str:
     """
-    Function used to create the directory path for a given dataset - model - run_name configuration, or a subfolder of that directory for training.
+    Constructs a directory path based on dataset name, model name, and run name.
+
+    Args:
+        dataset_name (str): Name of the dataset.
+        model_name (str): Name of the model.
+        run_name (str): Name of the run.
+        training (bool, optional): If True, appends a "training" subfolder to the path. Defaults to False.
+
+    Returns:
+        str: Constructed directory path.
     """
     current_directory = os.path.dirname(os.path.abspath(__file__))
     parent_directory = os.path.dirname(current_directory)
     path = os.path.join(
-        parent_directory, "out", "results", dataset_name, model_name, run_name)
-    if training: 
+        parent_directory, "out", "results", dataset_name, model_name, run_name
+    )
+    if training:
         path = os.path.join(path, "training")
     return path
 
 
-def setup_output_dir(dataset_name: str, model_name: str, run_name: str, training: bool = False) -> Path:
+def setup_output_dir(
+    dataset_name: str, model_name: str, run_name: str, training: bool = False
+) -> str:
     """
-    Function used to create an output directory for a given dataset - model - run_name configuration.
+    Sets up the output directory. If directory already exists, prompts user for overwrite. If it doesn't, creates it.
 
-    Parameters
-    ----------
-    dataset_name: str
-      Name of the dataset used for training.
-    model_name: str
-      Name of the model.
-    run_name: str
-      Name of the run.
+    Args:
+        dataset_name (str): Name of the dataset.
+        model_name (str): Name of the model.
+        run_name (str): Name of the run.
+        training (bool, optional): If True, appends a "training" subfolder to the path. Defaults to False.
 
-    Returns
-    -------
-    Path to run directory
+    Returns:
+        str: Path to the set up directory.
     """
 
     path = get_path(dataset_name, model_name, run_name, training=training)
@@ -90,20 +104,33 @@ def setup_output_dir(dataset_name: str, model_name: str, run_name: str, training
         if yn.lower() == "y":
             remove_dir_contents(path)
         else:
-            print('Aborting run.')
+            print("Aborting run.")
             sys.exit(1)
 
-    else: 
+    else:
         Path(path).mkdir(parents=True)
 
     return path
 
 
+# TODO: This function may be redundant / the flow it enables may be redundant.
 def setup_training_dir(
     dataset_name: str, model_name: str, run_name: str, train_mode: str
 ) -> str:
+    """
+    Sets up the training directory based on the training mode.
+
+    Args:
+        dataset_name (str): Name of the dataset.
+        model_name (str): Name of the model.
+        run_name (str): Name of the run.
+        train_mode (str): Mode of training ('train', 'resume', or 'load').
+
+    Returns:
+        str: Path to the training directory.
+    """
     if train_mode == "train":
-        path = setup_output_dir(dataset_name, model_name, run_name, training = True)
+        path = setup_output_dir(dataset_name, model_name, run_name, training=True)
 
     elif train_mode.isin(["resume", "load"]):
         path = get_path(dataset_name, model_name, run_name, training=True)
@@ -112,17 +139,18 @@ def setup_training_dir(
 
     return path
 
+
 def setup_logger(run_folder: str, log_file: str = "run.log", level=logging.INFO):
     """
-    Set up the logger.
+    Configures and returns a logger to log messages to the console and a file.
 
     Args:
-    - run_folder (str): Path to the folder where the logs should be saved.
-    - log_file (str): Name of the file where the logs should be saved.
-    - level (int): Logging level. By default, it's set to logging.INFO.
+        run_folder (str): Directory where the log file should be saved.
+        log_file (str, optional): Name of the log file. Defaults to "run.log".
+        level (int, optional): Logging level, e.g., logging.INFO. Defaults to logging.INFO.
 
     Returns:
-    - logger (logging.Logger): Configured logger.
+        logging.Logger: Configured logger.
     """
     log_file_path = os.path.join(run_folder, log_file)
 
@@ -130,18 +158,15 @@ def setup_logger(run_folder: str, log_file: str = "run.log", level=logging.INFO)
     logger = logging.getLogger(__name__)
     logger.setLevel(level)
 
-    # Create handlers for both the console and the log file
     console_handler = logging.StreamHandler()
     file_handler = logging.FileHandler(log_file_path)
 
-    # Define the log format
     formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
     console_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
 
-    # Add the handlers to the logger
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
 
@@ -151,49 +176,32 @@ def setup_logger(run_folder: str, log_file: str = "run.log", level=logging.INFO)
     return logger
 
 
-def save_model(model: nn.Module, run_folder: str, only_weights: bool = True):
+def save_model(model: nn.Module, run_folder: str, only_weights: bool = True) -> None:
     """
-    Save a PyTorch model's state to a specified folder.
-    This can save either just the weights or the whole model.
+    Saves a PyTorch model to a specified directory.
 
-    Parameters
-    ----------
-    model : nn.Module
-        PyTorch model to save.
-    run_folder : str
-        Folder path where the model's state will be saved.
-    only_weights : bool, default=True
-        If True, only the model's weights are saved.
-        If False, the entire model and its weights are saved.
-
-    Returns
-    -------
-    None
+    Args:
+        model (nn.Module): PyTorch model to be saved.
+        run_folder (str): Directory where the model should be saved.
+        only_weights (bool, optional): If True, only saves model weights. Otherwise, saves the entire model. Defaults to True.
     """
     if only_weights:
         torch.save(model.state_dict(), f"{run_folder}/weights.pth")
-    else:  # save the whole model and the weights too
+    else:
         torch.save(model, f"{run_folder}/model.pth")
         torch.save(model.state_dict(), f"{run_folder}/weights.pth")
 
 
-def load_model(run_folder: str, model: Optional[nn.Module] = None):
+def load_model(run_folder: str, model: Optional[nn.Module] = None) -> nn.Module:
     """
-    Load a PyTorch model's state from a specified folder.
-    This can either load weights into an existing model or load an entire saved model.
+    Loads a PyTorch model or its weights from a specified directory.
 
-    Parameters
-    ----------
-    run_folder : str
-        Folder path from where the model's state will be loaded.
-    model : Optional[nn.Module], default=None
-        If provided, this model's weights are updated from the saved state.
-        If not provided, a complete saved model is loaded.
+    Args:
+        run_folder (str): Directory from which the model or its weights should be loaded.
+        model (Optional[nn.Module], optional): If provided, updates this model's weights. If not provided, a full model is loaded.
 
-    Returns
-    -------
-    nn.Module
-        The loaded or updated PyTorch model.
+    Returns:
+        nn.Module: Loaded model.
     """
     if model:
         if not os.path.exists(f"{run_folder}/weights.pth"):

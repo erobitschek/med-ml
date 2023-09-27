@@ -28,24 +28,24 @@ def train_simple_model(
     y_val: Optional[npt.ArrayLike] = None,
 ) -> Callable:
     """
-    Function to train a sklearn model on the specified data. If param grid is used, the model hyperparameter is selected
-    using 5 fold CV.
+    Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs hyperparameter 
+    selection using 5-fold cross-validation.
 
-    Parameters:
-    - run_dir (str): Directory to save outputs
-    - x_train (array-like): Training features.
-    - y_train (array-like): Training labels.
-    - x_test (array-like): Testing features.
-    - y_test (array-like): Testing labels.
-    - model (Callable): The machine learning model to train.
-    - param_grid (Optional[Dict]): Hyperparameters for grid search 
-    - x_val (Optional[array-like]): Validation features
-    - y_val (Optional[array-like]): Validation labels 
+    Args:
+        run_dir (str): Directory to save outputs.
+        x_train (npt.ArrayLike): Training feature data.
+        y_train (npt.ArrayLike): Training target data.
+        x_test (npt.ArrayLike): Testing feature data.
+        y_test (npt.ArrayLike): Testing target data.
+        model (Callable): Untrained machine learning model.
+        param_grid (Optional[Dict], optional): Parameters to search over for hyperparameter tuning. Defaults to None.
+        x_val (Optional[npt.ArrayLike], optional): Validation feature data. Defaults to None.
+        y_val (Optional[npt.ArrayLike], optional): Validation target data. Defaults to None.
 
     Returns:
-    - Trained sci-kit learn model.
-     The function prints evaluation metrics on the test set for an initial preview of model performance.
+        Callable: Trained scikit-learn model.
 
+    The function also outputs model evaluation metrics on the test set for an initial overview of model performance.
     """
     
     if x_val is None:
@@ -86,30 +86,27 @@ def train_pytorch_model(
     save_path: str = None,
 ) -> None:
     """
-    Train a PyTorch model using the given data.
+    Trains a PyTorch model using the provided data loaders. The function logs the training progress and loss. It also 
+    offers functionalities such as early stopping and model checkpointing.
 
-    Parameters:
-    - model: class of PyTorch model to train.
-    - train_loader: DataLoader for training data.
-    - val_loader: DataLoader for validation data.
-    - train_dir (str): Directory to save training artifacts.
-    - logger (logging.Logger): Logger for training progress.
-    - device (str): Device to use for training 
-    - criterion: Loss criterion 
-    - optimizer (str): Optimizer choice, either "adam" or "sgd"
-    - num_epochs (int): Number of training epochs
-    - learning_rate (float): Learning rate for the optimizer 
-    - start_epoch (int): Starting epoch 
-    - patience (int): Patience for early stopping 
-    - checkpoint_freq (int): Frequency to save model checkpoints
-    - save_path (str): Path to save the best model
+    Args:
+        model: PyTorch model class instance to be trained.
+        train_loader: DataLoader object for training data.
+        val_loader: DataLoader object for validation data.
+        train_dir (str): Directory to save training artifacts.
+        logger (logging.Logger): Logger for capturing training progress.
+        device (str, optional): Device on which the model should be trained. Defaults to "cpu".
+        criterion (optional): Loss function to use. Defaults to nn.BCELoss().
+        optimizer (str, optional): Optimizer choice ("adam" or "sgd"). Defaults to "adam".
+        num_epochs (int, optional): Total number of epochs for training. Defaults to 100.
+        learning_rate (float): Learning rate for the optimizer.
+        start_epoch (int, optional): Epoch to begin training. Useful for resuming training. Defaults to 0.
+        patience (int, optional): Patience parameter for early stopping. Defaults to 20.
+        checkpoint_freq (int, optional): Frequency for saving model checkpoints. Defaults to 10.
+        save_path (str, optional): Directory path to save the best model weights. Defaults to train_dir.
 
     Returns:
-    - None
-
-    This function trains a PyTorch model using the provided data loaders and logs training progress and loss. It supports
-    early stopping and model checkpointing.
-
+        None
     """
     if save_path is None:
         save_path = train_dir

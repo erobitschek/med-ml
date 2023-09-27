@@ -13,6 +13,20 @@ from utils import (get_path, load_config, set_seed, setup_logger,
 
 
 def parse_args():
+    """
+    Parses command-line arguments for the script using argparse.
+    
+    Args:
+        None
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+
+    Notes:
+        This function sets up the arguments that the main script expects, including configuration 
+        paths, training modes, and evaluation settings. Make sure to provide the necessary arguments 
+        when running the script.
+    """
     parser = argparse.ArgumentParser(description="Main pipeline for model processing.")
     parser.add_argument(
         "--config", required=True, help="Path to the configuration file."
@@ -38,6 +52,26 @@ def parse_args():
 
 
 def main():
+    """
+    Main function to run the model processing pipeline based on command-line arguments.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If an unsupported train mode is provided.
+        ValueError: If an unsupported data state is provided.
+        ValueError: If an unsupported model framework is provided.
+
+    Notes:
+        This function retrieves command-line arguments using argparse, loads the configuration settings, 
+        sets up logging, processes the data, and then either trains or loads the model based on the 
+        specified arguments. It supports different frameworks such as scikit-learn and PyTorch, and 
+        also supports different training modes.
+    """
     args = parse_args()
 
     config = load_config(args.config)

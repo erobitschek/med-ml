@@ -26,24 +26,27 @@ def run_torch(
     """
     Trains, loads, and evaluates a model using PyTorch.
 
-    Parameters:
-    - config (Config): RunConfiguration object containing runtime settings and model parameters.
-    - run_dir (str): Directory to save and retrieve models and logs.
-    - train_set (DataSet): Training dataset object with attributes x and y.
-    - val_set (DataSet): Validation dataset object with attributes x and y.
-    - test_set (DataSet): Test dataset object with attributes x and y.
-    - train_mode (str): Either "train" for training or "load" for loading pre-trained model.
-    - model_eval (bool): If True, evaluate the model on the test set.
+    Args:
+        config (RunConfig): RunConfiguration object containing runtime settings and model parameters.
+        run_dir (str): Directory to save and retrieve models and logs.
+        train_set (npt.ArrayLike): Training dataset object with attributes x and y.
+        val_set (npt.ArrayLike): Validation dataset object with attributes x and y.
+        test_set (npt.ArrayLike): Test dataset object with attributes x and y.
+        train_mode (str): Either "train" for training or "load" for loading pre-trained model.
+        model_eval (bool, optional): If True, evaluate the model on the test set. Defaults to True.
 
     Returns:
-    - None
+        None
 
     Raises:
-    - FileNotFoundError: If model weights are not found when train_mode is "load".
+        FileNotFoundError: If model weights are not found when train_mode is "load".
+        ValueError: If a validation set is not provided for the PyTorch model implementation.
+        NotImplementedError: If train_mode is "resume", as this feature is not yet implemented.
 
     Notes:
-    - This function is intended for models using the PyTorch library.
-    - Ensure the correct dependencies are imported when using different functionalities.
+        This function is intended for models using the PyTorch library.
+        Ensure the correct dependencies are imported when using different functionalities.
+
     """
     if val_set is None:
         raise ValueError(

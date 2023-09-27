@@ -1,14 +1,12 @@
 import json
 import logging
-from typing import Dict, Union
+from typing import Dict
 
 import numpy.typing as npt
-import torch
 from sklearn.metrics import (balanced_accuracy_score, f1_score,
                              precision_score, recall_score, roc_auc_score,
                              roc_curve)
 
-from configs.config_scaffold import RunConfig
 from data import DataSplit
 from predict import save_predictions_to_file
 
@@ -16,7 +14,16 @@ from predict import save_predictions_to_file
 def evaluate_predictions(
     predictions: npt.ArrayLike, true_labels: npt.ArrayLike
 ) -> Dict[str, float]:
-    """Evaluate predictions using various metrics."""
+    """
+    Evaluate predictions using various metrics such as AUC, balanced accuracy, F1 score, precision, and recall.
+
+    Args:
+        predictions (npt.ArrayLike): Array-like of model predictions.
+        true_labels (npt.ArrayLike): Array-like of true labels for the data.
+
+    Returns:
+        Dict[str, float]: Dictionary containing various evaluation metrics.
+    """
 
     auc = roc_auc_score(true_labels, predictions)
     balanced_acc = balanced_accuracy_score(true_labels, predictions)
@@ -44,7 +51,12 @@ def save_evaluation_summary(
     filename: str = "evaluation_summary.json",
 ) -> None:
     """
-    Save evaluation metrics to a summary file.
+    Save evaluation metrics to a summary file in JSON format.
+
+    Args:
+        metric_dict (Dict[str, float]): Dictionary containing evaluation metrics.
+        run_folder (str): Path to the folder where the summary file will be saved.
+        filename (str, optional): Name of the summary file. Defaults to "evaluation_summary.json".
     """
     with open(f"{run_folder}/{filename}", "w") as f:
         metric_dict = {k: str(v) for k, v in metric_dict.items()}
@@ -59,15 +71,15 @@ def run_eval(
     logger: logging.Logger,
 ) -> None:
     """
-    Saves the predictions and probabilities (typically from the test set) and evaluates the model, saving a summary to the run_directory.
+    Runs the evaluation process by saving predictions and probabilities, then evaluates the model predictions and
+    saves a summary of the evaluation to the specified directory.
 
-    Parameters
-    ----------
-    predictions : Array of predictions.
-    probabilities : Array of probabilities.
-    true_labels : DataSplit with true labels.
-    run_dir : Directory to save metadata to.
-    logger : Logger object.
+    Args:
+        predictions (npt.ArrayLike): Array-like of model predictions.
+        probabilities (npt.ArrayLike): Array-like of predicted probabilities.
+        true_labels (DataSplit): DataSplit object containing the true labels.
+        run_dir (str): Directory where predictions, probabilities, and evaluation summary will be saved.
+        logger (logging.Logger): Logger object to log the process and results.
     """
     logger.info(
         f"The first 5 predictions and their probabilities are: {predictions[:5], probabilities[:5]}"

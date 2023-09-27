@@ -6,28 +6,17 @@ class TorchLogisticRegression(nn.Module):
     """
     A simple logistic regression implementation using PyTorch.
 
-    Attributes
-    ----------
-    linear : nn.Linear
-        A linear layer that transforms the input data.
-    input_dim : int
-        Dimensionality (i.e., number of features) of the input data.
+    Attributes:
+        linear (nn.Linear): A linear layer that transforms the input data.
+        input_dim (int): Dimensionality (i.e., number of features) of the input data.
 
-    Methods
-    -------
-    forward(x: torch.Tensor) -> torch.Tensor:
-        Passes the input through the linear layer followed by a sigmoid activation.
+    Example:
+        >>> model = LogisticRegression(input_dim=10)
+        >>> sample_input = torch.rand((5, 10))
+        >>> output = model(sample_input)
 
-    Example
-    -------
-    >>> model = LogisticRegression(input_dim=10)
-    >>> sample_input = torch.rand((5, 10))
-    >>> output = model(sample_input)
-
-    Parameters
-    ----------
-    input_dim : int
-        Dimensionality (i.e., number of features) of the input data.
+    Args:
+        input_dim (int): Dimensionality (i.e., number of features) of the input data.
     """
 
     def __init__(self, input_dim):
@@ -40,19 +29,21 @@ class TorchLogisticRegression(nn.Module):
         """
         Forward pass for the logistic regression model.
 
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor with shape (batch_size, input_dim).
+        Args:
+            x (torch.Tensor): Input tensor with shape (batch_size, input_dim).
 
-        Returns
-        -------
-        torch.Tensor
-            Output tensor after passing through the linear layer
-            and the sigmoid activation. Shape: (batch_size, 1).
+        Returns:
+            torch.Tensor: Output tensor after passing through the linear layer
+                          and the sigmoid activation. Shape: (batch_size, 1).
         """
         out = torch.sigmoid(self.linear(x))
         return out
 
     def attributes(self):
-        return {"input_dim": self.input_dim}
+        """
+        Returns the attributes of the model as a dictionary.
+
+        Returns:
+            Dict[str, int]: Dictionary containing model attributes.
+        """
+        return {"input_dim": self.input_dim, "output_dim": self.output_dim}
