@@ -12,9 +12,10 @@ config = RunConfig(
     ),
     dataset=DatasetConfig(
         name="synth_10000pts",
-        path="../data/raw/synth_med_data_10000patients_05women_01target_015femalecodes_015malecodes.csv",
+        project="synth_med_data",
+        path="../data/synth_med_data/raw/synth_med_data_10000patients_05women_01target_015femalecodes_015malecodes.csv",
         split_ratios=SplitRatios(0.8, 0.1, 0.1),
         target="is_Female",
-        feature_threshold=5,
+        feature_threshold=10,
     ),
 )
