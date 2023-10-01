@@ -58,6 +58,7 @@ class ModelConfig:
 @dataclass
 class DatasetConfig:
     name: str
+    project: str
     path: str
     target: str
     split_ratios: SplitRatios
@@ -66,8 +67,12 @@ class DatasetConfig:
     encoding: FeatureEncoding = FeatureEncoding.BINARY
     feature_threshold: int = 0 # the minimum number of times a medical code occurs in the dataset
     shuffle: bool = True
-    raw_dir: str = "../data/raw/"
-    processed_dir: str = "../data/processed/"
+
+    def get_data_paths(self):
+        raw_dir = f"../data/{self.project}/raw/"
+        processed_dir = f"../data/{self.project}/processed/"
+        split_dir = f"../data/{self.project}/split/"
+        return raw_dir, processed_dir, split_dir
 
 
 @dataclass
