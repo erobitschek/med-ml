@@ -176,10 +176,12 @@ def get_x_y(
     elif encoding == FeatureEncoding.COUNT:
         print("Encoding feature counts.")
         features = encode_codes_with_counts(filtered_data).astype(int)
-    else: 
+    else:
         raise ValueError(f"Encoding method {encoding} not supported.")
 
-    assert features.index.equals(target_df.index), 'Feature and target var indices must match.'
+    assert features.index.equals(
+        target_df.index
+    ), "Feature and target var indices must match."
 
     x = features
     y = target_df[target]
@@ -187,7 +189,9 @@ def get_x_y(
     return x, y
 
 
-def df_to_array(x: pd.DataFrame, y: pd.Series) -> tuple[npt.ArrayLike, npt.ArrayLike, DatasetMeta]:
+def df_to_array(
+    x: pd.DataFrame, y: pd.Series
+) -> tuple[npt.ArrayLike, npt.ArrayLike, DatasetMeta]:
     """Converts x and y dataframes to arrays and returns metadata for x.
 
     Args:
@@ -242,7 +246,7 @@ def split_data_train_test(
     test = DataSplit(x=x_test, y=y_test)
 
     return train, test
-    
+
 
 def split_data_train_test_val(
     x: Array,
@@ -261,7 +265,11 @@ def split_data_train_test_val(
     Returns:
         tuple[DataSplit, DataSplit, DataSplit]: Training, testing, and validation data splits.
     """
-    train_size, val_size, test_size = split_ratios.train, split_ratios.val, split_ratios.test
+    train_size, val_size, test_size = (
+        split_ratios.train,
+        split_ratios.val,
+        split_ratios.test,
+    )
 
     x_train, x_temp, y_train, y_temp = train_test_split(
         x, y, test_size=1 - train_size, random_state=random_state
@@ -278,9 +286,12 @@ def split_data_train_test_val(
     return train, test, val
 
 
-
 def get_dataloaders(
-    dataset: str, train: DataSplit, test: DataSplit, batch_size: int = 32, val: Optional[DataSplit] = None
+    dataset: str,
+    train: DataSplit,
+    test: DataSplit,
+    batch_size: int = 32,
+    val: Optional[DataSplit] = None,
 ) -> tuple[torch.utils.data.DataLoader, ...]:
     """Creates dataloaders for training, testing, and optionally validation sets.
 
@@ -307,10 +318,17 @@ def get_dataloaders(
     if val is not None:
         ds_val = TorchDataset(x=val.x, y=val.y, dataset_name=dataset)
         val_loader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size)
-    
+
     return train_loader, test_loader, val_loader
 
-def prep_data_for_modelling(config: RunConfig, run_dir: str, data_state: str, logger: logging.Logger) -> tuple[DataSplit, DataSplit, Optional[DataSplit]]:
+
+def prep_data_for_modelling(
+    config: RunConfig,
+    run_dir: str,
+    data_state: str,
+    logger: logging.Logger,
+    to_array: bool = True,
+) -> tuple[DataSplit, DataSplit, Optional[DataSplit]]:
     """Prepares data for modeling using the given configuration.
 
     Args:
@@ -318,6 +336,7 @@ def prep_data_for_modelling(config: RunConfig, run_dir: str, data_state: str, lo
         run_dir (str): Directory to save metadata.
         data_state (str): Indicates if raw or processed data is to be loaded.
         logger (logging.Logger): Logger object.
+        if_array (bool, optional): Whether to convert df data to arrays and write metadata.
 
     Returns:
         tuple[DataSplit, DataSplit, Optional[DataSplit]]: Training, testing, and optionally validation data splits.
@@ -335,17 +354,16 @@ def prep_data_for_modelling(config: RunConfig, run_dir: str, data_state: str, lo
     logger.info(f"Data loaded")
     logger.info(f"Converting target df to array")
 
-    x, y, meta = df_to_array(x, y)
+    if to_array:
+        x, y, meta = df_to_array(x, y)
 
-    logger.info(f"Extracting row, column metadata from feature array")
-    logger.info(f"Saving metadata to {run_dir}")
+        logger.info(f"Extracting row, column metadata from feature array")
+        logger.info(f"Saving metadata to {run_dir}")
 
-    save_vars_to_pickle(run_dir, meta.ids, "individual_ids")
-    save_vars_to_pickle(run_dir, meta.feature_names, "feature_names")
+        save_vars_to_pickle(run_dir, meta.ids, "individual_ids")
+        save_vars_to_pickle(run_dir, meta.feature_names, "feature_names")
 
-    logger.info(
-        f"The split ratios for the dataset are: {config.dataset.split_ratios}"
-    )
+    logger.info(f"The split ratios for the dataset are: {config.dataset.split_ratios}")
 
     if config.dataset.split_ratios.val == 0:
         val_set = None

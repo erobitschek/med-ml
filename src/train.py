@@ -21,7 +21,6 @@ def train_simple_model(
     x_train: npt.ArrayLike,
     y_train: npt.ArrayLike,
     x_test: npt.ArrayLike,
-    y_test: npt.ArrayLike,
     model: Callable,
     param_grid: Optional[Dict] = None,
     x_val: Optional[npt.ArrayLike] = None,
@@ -50,7 +49,6 @@ def train_simple_model(
     
     if x_val is None:
         x_train = x_train.squeeze()
-        x_test = x_test.squeeze()
     else:
         print("combine training and validation data")
         x_train = np.vstack((x_train, x_val)).squeeze()
