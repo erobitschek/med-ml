@@ -25,7 +25,7 @@ class DataState(Enum):
     SPLIT = auto()
 
 
-@dataclass
+@dataclass(frozen=True)
 class SplitRatios:
     """Must add to 1.0 val should be 0 if no validation set is desired."""
 
@@ -52,6 +52,8 @@ class ModelConfig:
     dropout_rate: float = 0.5
     patience: int = 20
     param_grid: dict = None  # for grid search to find optimal model parameters
+
+    # TODO: add post init that adds some parameters based on framework
 
 
 @dataclass(frozen=True)
