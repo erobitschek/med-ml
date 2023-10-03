@@ -7,7 +7,7 @@ config = RunConfig(
         learning_rate=0.005,
         batch_size=32,
         epochs=500,
-        framework="lightgbm",
+        framework=ModelFramework.LIGHTGBM,
         param_grid= None,
     ),
     dataset=DatasetConfig(
