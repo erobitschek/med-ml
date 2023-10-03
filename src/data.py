@@ -60,11 +60,8 @@ class TorchDataset(torch.utils.data.Dataset):
 
 def load_data(path: str, filter_cols: list = None) -> pd.DataFrame:
     """Loads data from a CSV file and optionally filters certain columns."""
-
-    if filter_cols:
-        return pd.read_csv(path)[filter_cols]
-    else:
-        return pd.read_csv(path)
+    data = pd.read_csv(path)
+    return data[filter_cols] if filter_cols else data
 
 
 def get_biosex_targetdf(data: pd.DataFrame) -> pd.DataFrame:
@@ -177,9 +174,8 @@ def get_x_y(
     else:
         raise ValueError(f"Encoding method {encoding} not supported.")
 
-    assert features.index.equals(
-        target_df.index
-    ), "Feature and target var indices must match."
+    if not features.index.equals(target_df.index):
+        raise ValueError("Feature and target var indices must match.")
 
     x = features
     y = target_df[target]
