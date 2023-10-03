@@ -46,7 +46,7 @@ def run_simple(
                 y_train=train_set.y,
                 x_test=test_set.x,
                 y_test=test_set.y,
-                model=skLogisticRegression(max_iter=config.model.max_iter),
+                model=skLogisticRegression(max_iter=config.model.epochs),
                 param_grid=config.model.param_grid,
             )
 
@@ -57,7 +57,7 @@ def run_simple(
                 y_train=train_set.y,
                 x_test=test_set.x,
                 y_test=test_set.y,
-                model=skLogisticRegression(max_iter=config.model.max_iter),
+                model=skLogisticRegression(max_iter=config.model.epochs),
                 param_grid=config.model.param_grid,
                 x_val=val_set.x,
                 y_val=val_set.y,

@@ -6,9 +6,8 @@ config = RunConfig(
         name="logreg",
         learning_rate=0.001,
         batch_size=32,
-        epochs=500,
+        epochs=1000,
         framework=ModelFramework.SKLEARN,
-        max_iter=1000,
         param_grid={'C': [0.001, 0.01, 0.1, 1, 10, 100],  # Inverse regularization strength
                     'penalty': ['l2']}  # L2 regularization
     ),
