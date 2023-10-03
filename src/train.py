@@ -7,9 +7,15 @@ import torch as torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from sklearn.metrics import (accuracy_score, average_precision_score,
-                             balanced_accuracy_score, f1_score,
-                             precision_score, recall_score, roc_auc_score)
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
 
@@ -21,36 +27,31 @@ def train_simple_model(
     x_train: npt.ArrayLike,
     y_train: npt.ArrayLike,
     x_test: npt.ArrayLike,
-    y_test: npt.ArrayLike,
     model: Callable,
     param_grid: Optional[Dict] = None,
     x_val: Optional[npt.ArrayLike] = None,
     y_val: Optional[npt.ArrayLike] = None,
 ) -> Callable:
-    """
-    Function to train a sklearn model on the specified data. If param grid is used, the model hyperparameter is selected
-    using 5 fold CV.
+    """Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs hyperparameter
+    selection using 5-fold cross-validation.
 
-    Parameters:
-    - run_dir (str): Directory to save outputs
-    - x_train (array-like): Training features.
-    - y_train (array-like): Training labels.
-    - x_test (array-like): Testing features.
-    - y_test (array-like): Testing labels.
-    - model (Callable): The machine learning model to train.
-    - param_grid (Optional[Dict]): Hyperparameters for grid search 
-    - x_val (Optional[array-like]): Validation features
-    - y_val (Optional[array-like]): Validation labels 
+    Args:
+        run_dir: Directory to save outputs.
+        x_train: Training feature data.
+        y_train: Training target data.
+        x_test: Testing feature data.
+        y_test: Testing target data.
+        model: Untrained machine learning model.
+        param_grid: Parameters to search over for hyperparameter tuning.
+        x_val: Validation feature data.
+        y_val: Validation target data.
 
     Returns:
-    - Trained sci-kit learn model.
-     The function prints evaluation metrics on the test set for an initial preview of model performance.
-
+        Trained scikit-learn model.
     """
-    
+
     if x_val is None:
         x_train = x_train.squeeze()
-        x_test = x_test.squeeze()
     else:
         print("combine training and validation data")
         x_train = np.vstack((x_train, x_val)).squeeze()
@@ -79,37 +80,30 @@ def train_pytorch_model(
     criterion=nn.BCELoss(),
     optimizer="adam",
     num_epochs=100,
-    learning_rate = float, 
+    learning_rate=float,
     start_epoch: int = 0,
     patience: int = 20,
     checkpoint_freq: int = 10,
     save_path: str = None,
 ) -> None:
-    """
-    Train a PyTorch model using the given data.
+    """Trains a PyTorch model using the provided data loaders. The function logs the training progress and loss. It also
+    offers functionalities such as early stopping and model checkpointing.
 
-    Parameters:
-    - model: class of PyTorch model to train.
-    - train_loader: DataLoader for training data.
-    - val_loader: DataLoader for validation data.
-    - train_dir (str): Directory to save training artifacts.
-    - logger (logging.Logger): Logger for training progress.
-    - device (str): Device to use for training 
-    - criterion: Loss criterion 
-    - optimizer (str): Optimizer choice, either "adam" or "sgd"
-    - num_epochs (int): Number of training epochs
-    - learning_rate (float): Learning rate for the optimizer 
-    - start_epoch (int): Starting epoch 
-    - patience (int): Patience for early stopping 
-    - checkpoint_freq (int): Frequency to save model checkpoints
-    - save_path (str): Path to save the best model
-
-    Returns:
-    - None
-
-    This function trains a PyTorch model using the provided data loaders and logs training progress and loss. It supports
-    early stopping and model checkpointing.
-
+    Args:
+        model: PyTorch model class instance to be trained.
+        train_loader: DataLoader object for training data.
+        val_loader: DataLoader object for validation data.
+        train_dir: Directory to save training artifacts.
+        logger: Logger for capturing training progress.
+        device: Device on which the model should be trained.
+        criterion: Loss function to use.
+        optimizer: Optimizer choice ("adam" or "sgd").
+        num_epochs: Total number of epochs for training.
+        learning_rate: Learning rate for the optimizer.
+        start_epoch: Epoch to begin training. Useful for resuming training.
+        patience: Patience parameter for early stopping.
+        checkpoint_freq: Frequency for saving model checkpoints.
+        save_path: Directory path to save the best model weights.
     """
     if save_path is None:
         save_path = train_dir
@@ -150,7 +144,7 @@ def train_pytorch_model(
         running_val_loss = 0.0
         with torch.no_grad():
             for batch_features, batch_labels in val_loader:
-                batch_features= batch_features.to(device)
+                batch_features = batch_features.to(device)
                 batch_labels = batch_labels.to(device)
                 outputs = model(batch_features)
                 loss = criterion(outputs.squeeze(), batch_labels.float())

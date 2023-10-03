@@ -20,23 +20,18 @@ def run_simple(
     val_set: Optional[npt.ArrayLike] = None,
     model_eval: bool = True,
 ):
-    """
-    Trains, loads, and evaluates a simple model using scikit-learn.
+    """Trains, loads, and evaluates a simple model using scikit-learn. 
+    
+    This function is intended for testing simple, non-neural network models.
 
-    Parameters:
-    - config (Config): RunConfiguration object containing runtime settings and model parameters.
-    - run_dir (str): Directory to save and retrieve models and logs.
-    - train_set (DataSet): Training dataset object with attributes x and y.
-    - test_set (DataSet): Test dataset object with attributes x and y.
-    - train_mode (str): Either "train" for training or "load" for loading pre-trained model.
-    - val_set (DataSet): Validation dataset object with attributes x and y. (optional)
-    - model_eval (bool): If True, evaluate the model on the test set.
-
-    Returns:
-    - None
-
-    Notes:
-    - This function is intended for testing simple, non-deep learning models.
+    Args:
+        config: RunConfiguration object containing runtime settings and model parameters.
+        run_dir: Directory to save and retrieve models and logs.
+        train_set: Training dataset object with attributes x and y.
+        test_set: Test dataset object with attributes x and y.
+        train_mode: Either "train" for training or "load" for loading pre-trained model.
+        val_set: Validation dataset object with attributes x and y.
+        model_eval: If True, evaluate the model on the test set.
     """
     logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
     model_path = f"{run_dir}/{config.model.name}_{config.model.framework}_model.joblib"
@@ -51,7 +46,7 @@ def run_simple(
                 y_train=train_set.y,
                 x_test=test_set.x,
                 y_test=test_set.y,
-                model=skLogisticRegression(max_iter=config.model.max_iter),
+                model=skLogisticRegression(max_iter=config.model.epochs),
                 param_grid=config.model.param_grid,
             )
 
@@ -62,7 +57,7 @@ def run_simple(
                 y_train=train_set.y,
                 x_test=test_set.x,
                 y_test=test_set.y,
-                model=skLogisticRegression(max_iter=config.model.max_iter),
+                model=skLogisticRegression(max_iter=config.model.epochs),
                 param_grid=config.model.param_grid,
                 x_val=val_set.x,
                 y_val=val_set.y,

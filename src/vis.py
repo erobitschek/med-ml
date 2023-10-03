@@ -3,29 +3,15 @@ import os
 import matplotlib.pyplot as plt
 
 
-def plot_loss(train_losses, val_losses, out_dir=None):
-    """
-    Plot training and validation losses over epochs and optionally save the plot to a specified directory.
+def plot_loss(train_losses: list[float], val_losses: list[float], out_dir=None) -> None:
+    """Plots training and validation losses over epochs. If an output directory is provided, the plot is saved, 
+    otherwise it is displayed.
 
-    Parameters
-    ----------
-    train_losses : list of float
-        List of training losses, typically one value per epoch.
-    val_losses : list of float
-        List of validation losses, typically one value per epoch.
-    out_dir : str, optional
-        Path to the directory where the plot should be saved.
-        If not provided, the plot is displayed but not saved.
-
-    Returns
-    -------
-    None
-
-    Example
-    -------
-    >>> train_losses = [0.5, 0.4, 0.3, 0.2]
-    >>> val_losses = [0.6, 0.5, 0.35, 0.25]
-    >>> plot_loss(train_losses, val_losses, out_dir='./plots')
+    Args:
+        train_losses: Training losses, typically one value per epoch.
+        val_losses: Validation losses, typically one value per epoch.
+        out_dir: Directory where the plot should be saved. If not specified, 
+            the plot will be displayed but not saved.
     """
 
     plt.style.use("ggplot")

@@ -13,31 +13,23 @@ def predict_from_torch(
     device: torch.device,
     return_probabilities: bool = False,
 ) -> npt.ArrayLike:
-    """
-    Use the provided model to predict labels for data in the data_loader.
+    """Use the provided model to predict labels for data in the data_loader.
 
-    Parameters
-    ----------
-    model : nn.Module
-        The trained PyTorch model to use for predictions.
-    data_loader : torch.utils.data.DataLoader
-        DataLoader containing the data to predict on.
-    device : torch.device
-        The device (CPU or GPU) to which the model and data should be moved before prediction.
-    return_probabilities : bool, optional
-        If True, returns the probability of the positive class, otherwise returns binary labels.
+    Args:
+        model: The trained PyTorch model to use for predictions.
+        data_loader: DataLoader containing the data to predict on.
+        device: The device (CPU or GPU) to which the model and data should be moved before prediction.
+        return_probabilities: If True, returns the probability of the positive class,
+            otherwise returns binary labels.
 
-    Returns
-    -------
-    List[Union[int, float]]
+    Returns:
         List of predicted labels or probabilities.
 
-    Example
-    -------
-    >>> model = LogisticRegression(input_dim=10)
-    >>> data_loader = DataLoader(dataset, batch_size=32)
-    >>> device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    >>> predictions = predict(model, data_loader, device)
+    Example:
+        >>> model = LogisticRegression(input_dim=10)
+        >>> data_loader = DataLoader(dataset, batch_size=32)
+        >>> device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        >>> predictions = predict(model, data_loader, device)
     """
 
     model.eval()
@@ -64,26 +56,14 @@ def save_predictions_to_file(
     filename: str,
     probabilities: Optional[npt.ArrayLike] = None,
 ) -> None:
-    """
-    Save predictions and optionally their corresponding probabilities to a file in the specified directory.
+    """Save predictions and optionally their corresponding probabilities to a file in the specified directory.
 
-    Parameters
-    ----------
-    predictions : List[int]
-        List of predicted labels.
-    run_folder : Union[str, Path]
-        Directory where the predictions should be saved.
-    filename : str
-        Name of the file to save the predictions to.
-    probabilities : Optional[List[float]], optional
-        List of predicted probabilities corresponding to the labels. If provided, each line in the
-        output file will be in the format 'label,probability'.
-
-    Example
-    -------
-    >>> predictions = [1, 0, 1, 0]
-    >>> probabilities = [0.8, 0.2, 0.7, 0.1]
-    >>> save_predictions_to_file(predictions, "./output/", "results.txt", probabilities)
+    Args:
+        predictions: Predicted labels.
+        run_folder: Where the predictions should be saved.
+        filename: Name of the file to save the predictions to.
+        probabilities: List of predicted probabilities corresponding
+            to the labels. If provided, each line in the output file will be in the format 'label,probability'.
     """
 
     output_path = Path(run_folder) / filename
@@ -93,4 +73,3 @@ def save_predictions_to_file(
                 f.write(f"{label}\n")
             else:
                 f.write(f"{label},{probabilities[idx]}\n")
-

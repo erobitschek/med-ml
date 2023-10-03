@@ -23,27 +23,23 @@ def run_torch(
     train_mode: str,
     model_eval: bool = True,
 ):
-    """
-    Trains, loads, and evaluates a model using PyTorch.
+    """Trains, loads, and evaluates a model using PyTorch.
 
-    Parameters:
-    - config (Config): RunConfiguration object containing runtime settings and model parameters.
-    - run_dir (str): Directory to save and retrieve models and logs.
-    - train_set (DataSet): Training dataset object with attributes x and y.
-    - val_set (DataSet): Validation dataset object with attributes x and y.
-    - test_set (DataSet): Test dataset object with attributes x and y.
-    - train_mode (str): Either "train" for training or "load" for loading pre-trained model.
-    - model_eval (bool): If True, evaluate the model on the test set.
+    This function is intended for models using the PyTorch library, including more complex neural network models.
 
-    Returns:
-    - None
+    Args:
+        config: RunConfiguration object containing runtime settings and model parameters.
+        run_dir: Directory to save and retrieve models and logs.
+        train_set: Training dataset object with attributes x and y.
+        val_set: Validation dataset object with attributes x and y.
+        test_set: Test dataset object with attributes x and y.
+        train_mode: Either "train" for training or "load" for loading pre-trained model.
+        model_eval: If True, evaluate the model on the test set.
 
     Raises:
-    - FileNotFoundError: If model weights are not found when train_mode is "load".
-
-    Notes:
-    - This function is intended for models using the PyTorch library.
-    - Ensure the correct dependencies are imported when using different functionalities.
+        FileNotFoundError: If model weights are not found when train_mode is "load".
+        ValueError: If a validation set is not provided for the PyTorch model implementation.
+        NotImplementedError: If train_mode is "resume", as this feature is not yet implemented.
     """
     if val_set is None:
         raise ValueError(
@@ -67,8 +63,9 @@ def run_torch(
         train_mode=train_mode,
     )
 
+    # TODO: move model specification outside to be more flexible to calling different model types
     if train_mode == "train":  # TODO: implement 'resume' option
-        input_dim = train_set.x.shape[1]  # (Number of features)
+        input_dim = train_set.x.shape[1]
         model = TorchLogisticRegression(input_dim=input_dim).to(device)
         logger.info("Training pytorch implementation of model...")
         logger.info(f"Model type is: {type(model)}")

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 
 
@@ -25,7 +25,7 @@ class DataState(Enum):
     SPLIT = auto()
 
 
-@dataclass
+@dataclass(frozen=True)
 class SplitRatios:
     """Must add to 1.0 val should be 0 if no validation set is desired."""
 
@@ -47,27 +47,38 @@ class ModelConfig:
     name: str
     learning_rate: float
     batch_size: int
-    epochs: int
+    epochs: int = 500
     framework: ModelFramework = ModelFramework.SKLEARN
-    max_iter: int = 500
     dropout_rate: float = 0.5
     patience: int = 20
     param_grid: dict = None  # for grid search to find optimal model parameters
 
+    # TODO: add post init that adds some parameters based on framework
 
-@dataclass
+
+@dataclass(frozen=True)
 class DatasetConfig:
     name: str
+    project: str
     path: str
     target: str
     split_ratios: SplitRatios
     medcode_col: str = "CODE"
     id_col: str = "ID"
     encoding: FeatureEncoding = FeatureEncoding.BINARY
-    feature_threshold: int = 0 # the minimum number of times a medical code occurs in the dataset
+    feature_threshold: int = (
+        0  # the minimum number of times a medical code occurs in the dataset
+    )
     shuffle: bool = True
-    raw_dir: str = "../data/raw/"
-    processed_dir: str = "../data/processed/"
+    raw_dir: str = field(init=False)
+    processed_dir: str = field(init=False)
+    split_dir: str = field(init=False)
+
+    def __post_init__(self):
+        # get directory paths for raw, processed and split data for the project
+        self.raw_dir = f"../data/{self.project}/raw/"
+        self.processed_dir = f"../data/{self.project}/processed/"
+        self.split_dir = f"../data/{self.project}/split/"
 
 
 @dataclass
