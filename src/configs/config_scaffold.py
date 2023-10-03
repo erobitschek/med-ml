@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 
 
@@ -65,14 +65,19 @@ class DatasetConfig:
     medcode_col: str = "CODE"
     id_col: str = "ID"
     encoding: FeatureEncoding = FeatureEncoding.BINARY
-    feature_threshold: int = 0 # the minimum number of times a medical code occurs in the dataset
+    feature_threshold: int = (
+        0  # the minimum number of times a medical code occurs in the dataset
+    )
     shuffle: bool = True
+    raw_dir: str = field(init=False)
+    processed_dir: str = field(init=False)
+    split_dir: str = field(init=False)
 
-    def get_data_paths(self):
-        raw_dir = f"../data/{self.project}/raw/"
-        processed_dir = f"../data/{self.project}/processed/"
-        split_dir = f"../data/{self.project}/split/"
-        return raw_dir, processed_dir, split_dir
+    def __post_init__(self):
+        # get directory paths for raw, processed and split data for the project
+        self.raw_dir = f"../data/{self.project}/raw/"
+        self.processed_dir = f"../data/{self.project}/processed/"
+        self.split_dir = f"../data/{self.project}/split/"
 
 
 @dataclass
