@@ -15,7 +15,7 @@ from configs.config_scaffold import FeatureEncoding, RunConfig, SplitRatios
 Array = Union[np.ndarray, pd.DataFrame]
 
 
-@dataclass
+@dataclass(frozen=True)
 class DatasetMeta:
     ids: list
     feature_names: list
