@@ -3,12 +3,11 @@ import torch.nn as nn
 
 
 class TorchLogisticRegression(nn.Module):
-    """
-    A simple logistic regression implementation using PyTorch.
+    """A simple logistic regression implementation using PyTorch.
 
     Attributes:
-        linear (nn.Linear): A linear layer that transforms the input data.
-        input_dim (int): Dimensionality (i.e., number of features) of the input data.
+        linear: A linear layer that transforms the input data.
+        input_dim: Dimensionality (i.e., number of features) of the input data.
 
     Example:
         >>> model = LogisticRegression(input_dim=10)
@@ -16,7 +15,7 @@ class TorchLogisticRegression(nn.Module):
         >>> output = model(sample_input)
 
     Args:
-        input_dim (int): Dimensionality (i.e., number of features) of the input data.
+        input_dim: Dimensionality (i.e., number of features) of the input data.
     """
 
     def __init__(self, input_dim):
@@ -26,24 +25,17 @@ class TorchLogisticRegression(nn.Module):
         self.linear = nn.Linear(input_dim, self.output_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass for the logistic regression model.
+        """Forward pass for the logistic regression model.
 
         Args:
-            x (torch.Tensor): Input tensor with shape (batch_size, input_dim).
+            x: Input tensor with shape (batch_size, input_dim).
 
         Returns:
-            torch.Tensor: Output tensor after passing through the linear layer
-                          and the sigmoid activation. Shape: (batch_size, 1).
+            Output tensor after passing through the linear layer and the sigmoid activation. Shape: (batch_size, 1).
         """
         out = torch.sigmoid(self.linear(x))
         return out
 
     def attributes(self):
-        """
-        Returns the attributes of the model as a dictionary.
-
-        Returns:
-            Dict[str, int]: Dictionary containing model attributes.
-        """
+        """Returns the attributes of the model as a dictionary."""
         return {"input_dim": self.input_dim, "output_dim": self.output_dim}

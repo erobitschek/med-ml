@@ -4,14 +4,13 @@ import matplotlib.pyplot as plt
 
 
 def plot_loss(train_losses: list[float], val_losses: list[float], out_dir=None) -> None:
-    """
-    Plots training and validation losses over epochs. If an output directory is provided, the plot is saved, 
+    """Plots training and validation losses over epochs. If an output directory is provided, the plot is saved, 
     otherwise it is displayed.
 
     Args:
-        train_losses (list[float]): List of training losses, typically one value per epoch.
-        val_losses (list[float]): List of validation losses, typically one value per epoch.
-        out_dir (str, optional): Directory where the plot should be saved. If not specified, 
+        train_losses: Training losses, typically one value per epoch.
+        val_losses: Validation losses, typically one value per epoch.
+        out_dir: Directory where the plot should be saved. If not specified, 
             the plot will be displayed but not saved.
     """
 

@@ -15,7 +15,7 @@ from configs.config_scaffold import FeatureEncoding, RunConfig, SplitRatios
 Array = Union[np.ndarray, pd.DataFrame]
 
 
-@dataclass
+@dataclass(frozen=True)
 class DatasetMeta:
     ids: list
     feature_names: list
@@ -59,29 +59,19 @@ class TorchDataset(torch.utils.data.Dataset):
 
 
 def load_data(path: str, filter_cols: list = None) -> pd.DataFrame:
-    """Loads data from a CSV file and optionally filters certain columns.
-
-    Args:
-        path (str): Path to the CSV file.
-        filter_cols (list, optional): List of columns to retain. Defaults to None.
-
-    Returns:
-        pd.DataFrame: Loaded data.
-    """
-    if filter_cols:
-        return pd.read_csv(path)[filter_cols]
-    else:
-        return pd.read_csv(path)
+    """Loads data from a CSV file and optionally filters certain columns."""
+    data = pd.read_csv(path)
+    return data[filter_cols] if filter_cols else data
 
 
 def get_biosex_targetdf(data: pd.DataFrame) -> pd.DataFrame:
     """Extracts and one-hot encodes biological sex information from data.
 
     Args:
-        data (pd.DataFrame): Input data containing 'ID' and 'SEX' columns.
+        data: Input data containing 'ID' and 'SEX' columns.
 
     Returns:
-        pd.DataFrame: Dataframe with one-hot encoded biological sex.
+        Dataframe with one-hot encoded biological sex.
     """
     pt_sex = data.drop_duplicates(subset="ID").reset_index(drop=True)[["ID", "SEX"]]
     pt_sex["is_Female"] = pt_sex["SEX"].map({"Female": 1, "Male": 0})
@@ -100,14 +90,14 @@ def filter_codes_by_overall_freq(
     """Filters codes based on their frequency and optionally writes the kept codes to a pickle file.
 
     Args:
-        data (pd.DataFrame): Data containing codes.
-        code_col (str, optional): Column name containing codes. Defaults to "CODE".
-        threshold (int, optional): Minimum frequency for a code to be retained. Defaults to 0.
-        write_kept_codes (bool, optional): Whether to write the kept codes to a pickle file. Defaults to False.
-        run_dir (str, optional): Directory to write the pickle file to. Used if `write_kept_codes` is True. Defaults to None.
+        data: Data containing codes.
+        code_col: Column name containing codes.
+        threshold: Minimum frequency for a code to be retained.
+        write_kept_codes: Whether to write the kept codes to a pickle file.
+        run_dir: Directory to write the pickle file to. Used if `write_kept_codes` is True.
 
     Returns:
-        pd.DataFrame: Filtered data.
+        Filtered data.
     """
     unique_codes = data[code_col].nunique()
     code_counts = data[code_col].value_counts()
@@ -122,8 +112,13 @@ def filter_codes_by_overall_freq(
 
 
 def encode_codes(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    One-hot encode 'CODE' column of the dataframe.
+    """One-hot encode 'CODE' column and for each 'ID' return the binary presence of all unique codes.
+
+    Args:
+        df: DataFrame containing 'CODE' column.
+
+    Returns:
+        DataFrame with count of each one-hot encoded 'CODE' value.
     """
     one_hot = (
         pd.get_dummies(df, columns=["CODE"], prefix="", prefix_sep="")
@@ -135,13 +130,13 @@ def encode_codes(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def encode_codes_with_counts(df: pd.DataFrame) -> pd.DataFrame:
-    """One-hot encodes 'CODE' column and returns count of each code.
+    """Calculate the number of times each unique 'CODE' appears for every unique 'ID'.
 
     Args:
-        df (pd.DataFrame): DataFrame containing 'CODE' column.
+        df: DataFrame containing 'CODE' column.
 
     Returns:
-        pd.DataFrame: DataFrame with count of each one-hot encoded 'CODE'.
+        DataFrame with count of each one-hot encoded 'CODE' value.
     """
     one_hot = pd.get_dummies(df, columns=["CODE"], prefix="", prefix_sep="")
     code_counts = one_hot.groupby("ID").sum()
@@ -155,16 +150,16 @@ def get_x_y(
     threshold: int = 0,
     encoding: str = "binary",
 ) -> tuple[pd.DataFrame, pd.Series]:
-    """Filters data based on code frequency, encodes it, and extracts features (x) and target (y).
+    """Filters medical codes above a frequency threshold, encodes it, and extracts features (x) and target (y).
 
     Args:
-        data (pd.DataFrame): Input data.
-        target (str, optional): Name of the target variable. Defaults to "is_Female".
-        threshold (int, optional): Frequency threshold for filtering codes. Defaults to 0.
-        encoding (str, optional): Encoding method, either "binary" or "counts". Defaults to "binary".
+        data: Input data.
+        target: Name of the target variable.
+        threshold: Frequency threshold for filtering codes.
+        encoding: Encoding method, either "binary" or "counts".
 
     Returns:
-        tuple[pd.DataFrame, pd.Series]: Features and target variable.
+        Features and target variable.
     """
     filtered_data = filter_codes_by_overall_freq(
         data, code_col="CODE", threshold=threshold
@@ -179,9 +174,8 @@ def get_x_y(
     else:
         raise ValueError(f"Encoding method {encoding} not supported.")
 
-    assert features.index.equals(
-        target_df.index
-    ), "Feature and target var indices must match."
+    if not features.index.equals(target_df.index):
+        raise ValueError("Feature and target var indices must match.")
 
     x = features
     y = target_df[target]
@@ -192,15 +186,8 @@ def get_x_y(
 def df_to_array(
     x: pd.DataFrame, y: pd.Series
 ) -> tuple[npt.ArrayLike, npt.ArrayLike, DatasetMeta]:
-    """Converts x and y dataframes to arrays and returns metadata for x.
+    """Returns numpy arrays for x (features) and y (labels) and feature metadata."""
 
-    Args:
-        x (pd.DataFrame): Features.
-        y (pd.Series): Target variable.
-
-    Returns:
-        tuple[npt.ArrayLike, npt.ArrayLike, DatasetMeta]: Feature array, target variable array, and metadata.
-    """
     x_values = x.values
     y_values = y.values
     meta = DatasetMeta(ids=x.index.tolist(), feature_names=x.columns.tolist())
@@ -208,13 +195,8 @@ def df_to_array(
 
 
 def save_vars_to_pickle(run_folder: str, data: Any, filename: str):
-    """Saves given data to a pickle file.
+    """Saves given data to a pickle file."""
 
-    Args:
-        run_folder (str): Folder to save the pickle file.
-        data (Any): Data to be saved.
-        filename (str): Name of the pickle file.
-    """
     with open(f"{run_folder}/{filename}.pkl", "wb") as f:
         pickle.dump(data, f)
 
@@ -225,17 +207,8 @@ def split_data_train_test(
     split_ratios: SplitRatios = SplitRatios(),
     random_state: int = 3,
 ) -> tuple[DataSplit, DataSplit]:
-    """Splits data into training and testing sets.
-
-    Args:
-        x (Array): Features.
-        y (Array): Target variable.
-        split_ratios (SplitRatios, optional): Ratios for splitting data. Defaults to SplitRatios().
-        random_state (int, optional): Seed for random state. Defaults to 3.
-
-    Returns:
-        tuple[DataSplit, DataSplit]: Training and testing data splits.
-    """
+    """Splits feature (x) and target (y) data into training and testing sets."""
+    
     train_size, test_size = split_ratios.train, split_ratios.test
 
     x_train, x_test, y_train, y_test = train_test_split(
@@ -254,17 +227,8 @@ def split_data_train_test_val(
     split_ratios: SplitRatios = SplitRatios(),
     random_state: int = 3,
 ) -> tuple[DataSplit, DataSplit, DataSplit]:
-    """Splits data into training, testing, and validation sets.
+    """Splits feature (x) and target (y) data into training, testing and validation sets."""
 
-    Args:
-        x (Array): Features.
-        y (Array): Target variable.
-        split_ratios (SplitRatios, optional): Ratios for splitting data. Defaults to SplitRatios().
-        random_state (int, optional): Seed for random state. Defaults to 3.
-
-    Returns:
-        tuple[DataSplit, DataSplit, DataSplit]: Training, testing, and validation data splits.
-    """
     train_size, val_size, test_size = (
         split_ratios.train,
         split_ratios.val,
@@ -293,18 +257,8 @@ def get_dataloaders(
     batch_size: int = 32,
     val: Optional[DataSplit] = None,
 ) -> tuple[torch.utils.data.DataLoader, ...]:
-    """Creates dataloaders for training, testing, and optionally validation sets.
+    """Creates torch dataloaders for training, testing, and optionally validation sets."""
 
-    Args:
-        dataset (str): Name of the dataset.
-        train (DataSplit): Training data split.
-        test (DataSplit): Testing data split.
-        batch_size (int, optional): Batch size for the DataLoader. Defaults to 32.
-        val (Optional[DataSplit], optional): Validation data split. Defaults to None.
-
-    Returns:
-        tuple[torch.utils.data.DataLoader, ...]: DataLoaders for train, test, and optionally validation.
-    """
     ds_train = TorchDataset(x=train.x, y=train.y, dataset_name=dataset)
     ds_test = TorchDataset(x=test.x, y=test.y, dataset_name=dataset)
 
@@ -332,14 +286,14 @@ def prep_data_for_modelling(
     """Prepares data for modeling using the given configuration.
 
     Args:
-        config (RunConfig): Configuration object for data preparation.
-        run_dir (str): Directory to save metadata.
-        data_state (str): Indicates if raw or processed data is to be loaded.
-        logger (logging.Logger): Logger object.
-        if_array (bool, optional): Whether to convert df data to arrays and write metadata.
+        config: Configuration object for data preparation.
+        run_dir: Directory to save metadata.
+        data_state: Indicates if raw or processed data is to be loaded.
+        logger: Logger object.
+        if_array: Whether to convert df data to arrays and write metadata.
 
     Returns:
-        tuple[DataSplit, DataSplit, Optional[DataSplit]]: Training, testing, and optionally validation data splits.
+        Training, testing, and optionally validation data splits.
     """
     logger.info(f"Loading {data_state} data")
     if not os.path.exists(config.dataset.path):

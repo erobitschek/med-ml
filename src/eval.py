@@ -3,9 +3,14 @@ import logging
 from typing import Dict
 
 import numpy.typing as npt
-from sklearn.metrics import (balanced_accuracy_score, f1_score,
-                             precision_score, recall_score, roc_auc_score,
-                             roc_curve)
+from sklearn.metrics import (
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+)
 
 from data import DataSplit
 from predict import save_predictions_to_file
@@ -14,15 +19,14 @@ from predict import save_predictions_to_file
 def evaluate_predictions(
     predictions: npt.ArrayLike, true_labels: npt.ArrayLike
 ) -> Dict[str, float]:
-    """
-    Evaluate predictions using various metrics such as AUC, balanced accuracy, F1 score, precision, and recall.
+    """Evaluate predictions using various metrics.
 
     Args:
-        predictions (npt.ArrayLike): Array-like of model predictions.
-        true_labels (npt.ArrayLike): Array-like of true labels for the data.
+        predictions: Array-like of model predictions.
+        true_labels: Array-like of true labels for the data.
 
     Returns:
-        Dict[str, float]: Dictionary containing various evaluation metrics.
+        Dictionary containing various evaluation metrics.
     """
 
     auc = roc_auc_score(true_labels, predictions)
@@ -50,13 +54,12 @@ def save_evaluation_summary(
     run_folder: str,
     filename: str = "evaluation_summary.json",
 ) -> None:
-    """
-    Save evaluation metrics to a summary file in JSON format.
+    """Save evaluation metrics to a summary file in JSON format.
 
     Args:
-        metric_dict (Dict[str, float]): Dictionary containing evaluation metrics.
-        run_folder (str): Path to the folder where the summary file will be saved.
-        filename (str, optional): Name of the summary file. Defaults to "evaluation_summary.json".
+        metric_dict: Dictionary containing evaluation metrics.
+        run_folder: Path to the folder where the summary file will be saved.
+        filename: Name of the summary file.
     """
     with open(f"{run_folder}/{filename}", "w") as f:
         metric_dict = {k: str(v) for k, v in metric_dict.items()}
@@ -70,16 +73,15 @@ def run_eval(
     run_dir: str,
     logger: logging.Logger,
 ) -> None:
-    """
-    Runs the evaluation process by saving predictions and probabilities, then evaluates the model predictions and
+    """Runs the evaluation process by saving predictions and probabilities, then evaluates the model predictions and
     saves a summary of the evaluation to the specified directory.
 
     Args:
-        predictions (npt.ArrayLike): Array-like of model predictions.
-        probabilities (npt.ArrayLike): Array-like of predicted probabilities.
-        true_labels (DataSplit): DataSplit object containing the true labels.
-        run_dir (str): Directory where predictions, probabilities, and evaluation summary will be saved.
-        logger (logging.Logger): Logger object to log the process and results.
+        predictions: Array-like of model predictions.
+        probabilities: Array-like of predicted probabilities.
+        true_labels: DataSplit object containing the true labels.
+        run_dir: Directory where predictions, probabilities, and evaluation summary will be saved.
+        logger: Logger object to log the process and results.
     """
     logger.info(
         f"The first 5 predictions and their probabilities are: {predictions[:5], probabilities[:5]}"

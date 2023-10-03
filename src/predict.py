@@ -13,18 +13,17 @@ def predict_from_torch(
     device: torch.device,
     return_probabilities: bool = False,
 ) -> npt.ArrayLike:
-    """
-    Use the provided model to predict labels for data in the data_loader.
+    """Use the provided model to predict labels for data in the data_loader.
 
     Args:
-        model (nn.Module): The trained PyTorch model to use for predictions.
-        data_loader (torch.utils.data.DataLoader): DataLoader containing the data to predict on.
-        device (torch.device): The device (CPU or GPU) to which the model and data should be moved before prediction.
-        return_probabilities (bool, optional): If True, returns the probability of the positive class,
-            otherwise returns binary labels. Defaults to False.
+        model: The trained PyTorch model to use for predictions.
+        data_loader: DataLoader containing the data to predict on.
+        device: The device (CPU or GPU) to which the model and data should be moved before prediction.
+        return_probabilities: If True, returns the probability of the positive class,
+            otherwise returns binary labels.
 
     Returns:
-        npt.ArrayLike: List of predicted labels or probabilities.
+        List of predicted labels or probabilities.
 
     Example:
         >>> model = LogisticRegression(input_dim=10)
@@ -57,14 +56,13 @@ def save_predictions_to_file(
     filename: str,
     probabilities: Optional[npt.ArrayLike] = None,
 ) -> None:
-    """
-    Save predictions and optionally their corresponding probabilities to a file in the specified directory.
+    """Save predictions and optionally their corresponding probabilities to a file in the specified directory.
 
     Args:
-        predictions (npt.ArrayLike): List of predicted labels.
-        run_folder (Union[str, Path]): Directory where the predictions should be saved.
-        filename (str): Name of the file to save the predictions to.
-        probabilities (Optional[npt.ArrayLike], optional): List of predicted probabilities corresponding
+        predictions: Predicted labels.
+        run_folder: Where the predictions should be saved.
+        filename: Name of the file to save the predictions to.
+        probabilities: List of predicted probabilities corresponding
             to the labels. If provided, each line in the output file will be in the format 'label,probability'.
     """
 
