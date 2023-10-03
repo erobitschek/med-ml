@@ -73,8 +73,7 @@ def run_eval(
     run_dir: str,
     logger: logging.Logger,
 ) -> None:
-    """
-    Runs the evaluation process by saving predictions and probabilities, then evaluates the model predictions and
+    """Runs the evaluation process by saving predictions and probabilities, then evaluates the model predictions and
     saves a summary of the evaluation to the specified directory.
 
     Args:

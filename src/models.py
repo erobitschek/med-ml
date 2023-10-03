@@ -3,8 +3,7 @@ import torch.nn as nn
 
 
 class TorchLogisticRegression(nn.Module):
-    """
-    A simple logistic regression implementation using PyTorch.
+    """A simple logistic regression implementation using PyTorch.
 
     Attributes:
         linear: A linear layer that transforms the input data.
@@ -26,8 +25,7 @@ class TorchLogisticRegression(nn.Module):
         self.linear = nn.Linear(input_dim, self.output_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass for the logistic regression model.
+        """Forward pass for the logistic regression model.
 
         Args:
             x: Input tensor with shape (batch_size, input_dim).

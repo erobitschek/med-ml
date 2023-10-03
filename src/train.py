@@ -7,9 +7,15 @@ import torch as torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from sklearn.metrics import (accuracy_score, average_precision_score,
-                             balanced_accuracy_score, f1_score,
-                             precision_score, recall_score, roc_auc_score)
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
 
@@ -26,8 +32,7 @@ def train_simple_model(
     x_val: Optional[npt.ArrayLike] = None,
     y_val: Optional[npt.ArrayLike] = None,
 ) -> Callable:
-    """
-    Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs hyperparameter 
+    """Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs hyperparameter
     selection using 5-fold cross-validation.
 
     Args:
@@ -43,9 +48,8 @@ def train_simple_model(
 
     Returns:
         Trained scikit-learn model.
-
     """
-    
+
     if x_val is None:
         x_train = x_train.squeeze()
     else:
@@ -76,14 +80,13 @@ def train_pytorch_model(
     criterion=nn.BCELoss(),
     optimizer="adam",
     num_epochs=100,
-    learning_rate = float, 
+    learning_rate=float,
     start_epoch: int = 0,
     patience: int = 20,
     checkpoint_freq: int = 10,
     save_path: str = None,
 ) -> None:
-    """
-    Trains a PyTorch model using the provided data loaders. The function logs the training progress and loss. It also 
+    """Trains a PyTorch model using the provided data loaders. The function logs the training progress and loss. It also
     offers functionalities such as early stopping and model checkpointing.
 
     Args:
@@ -101,7 +104,6 @@ def train_pytorch_model(
         patience: Patience parameter for early stopping.
         checkpoint_freq: Frequency for saving model checkpoints.
         save_path: Directory path to save the best model weights.
-
     """
     if save_path is None:
         save_path = train_dir
@@ -142,7 +144,7 @@ def train_pytorch_model(
         running_val_loss = 0.0
         with torch.no_grad():
             for batch_features, batch_labels in val_loader:
-                batch_features= batch_features.to(device)
+                batch_features = batch_features.to(device)
                 batch_labels = batch_labels.to(device)
                 outputs = model(batch_features)
                 loss = criterion(outputs.squeeze(), batch_labels.float())

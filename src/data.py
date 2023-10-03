@@ -60,6 +60,7 @@ class TorchDataset(torch.utils.data.Dataset):
 
 def load_data(path: str, filter_cols: list = None) -> pd.DataFrame:
     """Loads data from a CSV file and optionally filters certain columns."""
+
     if filter_cols:
         return pd.read_csv(path)[filter_cols]
     else:
@@ -190,6 +191,7 @@ def df_to_array(
     x: pd.DataFrame, y: pd.Series
 ) -> tuple[npt.ArrayLike, npt.ArrayLike, DatasetMeta]:
     """Returns numpy arrays for x (features) and y (labels) and feature metadata."""
+
     x_values = x.values
     y_values = y.values
     meta = DatasetMeta(ids=x.index.tolist(), feature_names=x.columns.tolist())
@@ -198,6 +200,7 @@ def df_to_array(
 
 def save_vars_to_pickle(run_folder: str, data: Any, filename: str):
     """Saves given data to a pickle file."""
+
     with open(f"{run_folder}/{filename}.pkl", "wb") as f:
         pickle.dump(data, f)
 
@@ -209,6 +212,7 @@ def split_data_train_test(
     random_state: int = 3,
 ) -> tuple[DataSplit, DataSplit]:
     """Splits feature (x) and target (y) data into training and testing sets."""
+    
     train_size, test_size = split_ratios.train, split_ratios.test
 
     x_train, x_test, y_train, y_test = train_test_split(
@@ -228,6 +232,7 @@ def split_data_train_test_val(
     random_state: int = 3,
 ) -> tuple[DataSplit, DataSplit, DataSplit]:
     """Splits feature (x) and target (y) data into training, testing and validation sets."""
+
     train_size, val_size, test_size = (
         split_ratios.train,
         split_ratios.val,
@@ -257,6 +262,7 @@ def get_dataloaders(
     val: Optional[DataSplit] = None,
 ) -> tuple[torch.utils.data.DataLoader, ...]:
     """Creates torch dataloaders for training, testing, and optionally validation sets."""
+
     ds_train = TorchDataset(x=train.x, y=train.y, dataset_name=dataset)
     ds_test = TorchDataset(x=test.x, y=test.y, dataset_name=dataset)
 

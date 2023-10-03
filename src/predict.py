@@ -13,8 +13,7 @@ def predict_from_torch(
     device: torch.device,
     return_probabilities: bool = False,
 ) -> npt.ArrayLike:
-    """
-    Use the provided model to predict labels for data in the data_loader.
+    """Use the provided model to predict labels for data in the data_loader.
 
     Args:
         model: The trained PyTorch model to use for predictions.
@@ -57,8 +56,7 @@ def save_predictions_to_file(
     filename: str,
     probabilities: Optional[npt.ArrayLike] = None,
 ) -> None:
-    """
-    Save predictions and optionally their corresponding probabilities to a file in the specified directory.
+    """Save predictions and optionally their corresponding probabilities to a file in the specified directory.
 
     Args:
         predictions: Predicted labels.

@@ -23,8 +23,9 @@ def run_torch(
     train_mode: str,
     model_eval: bool = True,
 ):
-    """
-    Trains, loads, and evaluates a model using PyTorch.
+    """Trains, loads, and evaluates a model using PyTorch.
+
+    This function is intended for models using the PyTorch library, including more complex neural network models.
 
     Args:
         config: RunConfiguration object containing runtime settings and model parameters.
@@ -39,10 +40,6 @@ def run_torch(
         FileNotFoundError: If model weights are not found when train_mode is "load".
         ValueError: If a validation set is not provided for the PyTorch model implementation.
         NotImplementedError: If train_mode is "resume", as this feature is not yet implemented.
-
-    Notes:
-        This function is intended for models using the PyTorch library.
-        Ensure the correct dependencies are imported when using different functionalities.
     """
     if val_set is None:
         raise ValueError(
@@ -66,8 +63,9 @@ def run_torch(
         train_mode=train_mode,
     )
 
+    # TODO: move model specification outside to be more flexible to calling different model types
     if train_mode == "train":  # TODO: implement 'resume' option
-        input_dim = train_set.x.shape[1]  # (Number of features)
+        input_dim = train_set.x.shape[1]
         model = TorchLogisticRegression(input_dim=input_dim).to(device)
         logger.info("Training pytorch implementation of model...")
         logger.info(f"Model type is: {type(model)}")

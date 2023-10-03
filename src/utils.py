@@ -54,8 +54,7 @@ def remove_dir_contents(dir_path: str) -> None:
 def get_path(
     dataset_name: str, model_name: str, run_name: str, training: bool = False
 ) -> str:
-    """
-    Constructs a directory path based on dataset name, model name, and run name.
+    """Constructs a directory path based on dataset name, model name, and run name.
 
     Args:
         dataset_name: Name of the dataset.
@@ -79,8 +78,7 @@ def get_path(
 def setup_output_dir(
     dataset_name: str, model_name: str, run_name: str, training: bool = False
 ) -> str:
-    """
-    Sets up the output directory. If directory already exists, prompts user for overwrite. If it doesn't, creates it.
+    """Sets up the output directory. If directory already exists, prompts user for overwrite. If it doesn't, creates it.
 
     Args:
         dataset_name: Name of the dataset.
@@ -112,8 +110,7 @@ def setup_output_dir(
 def setup_training_dir(
     dataset_name: str, model_name: str, run_name: str, train_mode: str
 ) -> str:
-    """
-    Sets up the training directory based on the training mode.
+    """Sets up the training directory based on the training mode.
 
     Args:
         dataset_name: Name of the dataset.
@@ -163,8 +160,7 @@ def setup_logger(run_folder: str, log_file: str = "run.log", level=logging.INFO)
 
 
 def save_model(model: nn.Module, run_folder: str, only_weights: bool = True) -> None:
-    """
-    Saves a PyTorch model to a specified directory.
+    """Saves a PyTorch model to a specified directory.
 
     Args:
         model: PyTorch model to be saved.
@@ -179,8 +175,7 @@ def save_model(model: nn.Module, run_folder: str, only_weights: bool = True) -> 
 
 
 def load_model(run_folder: str, model: Optional[nn.Module] = None) -> nn.Module:
-    """
-    Loads a PyTorch model or its weights from a specified directory.
+    """Loads a PyTorch model or its weights from a specified directory.
 
     Args:
         run_folder: Directory from which the model or its weights should be loaded.
