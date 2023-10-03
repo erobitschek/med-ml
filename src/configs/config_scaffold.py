@@ -51,8 +51,10 @@ class ModelConfig:
     framework: ModelFramework = ModelFramework.SKLEARN
     max_iter: int = 500
     dropout_rate: float = 0.5
-    patience: int = 20
+    patience: int = None
+    params: dict = None  # param dict for lgbm model
     param_grid: dict = None  # for grid search to find optimal model parameters
+    grid_search: bool = False  # whether to perform the grid search
 
 
 @dataclass
@@ -65,7 +67,9 @@ class DatasetConfig:
     medcode_col: str = "CODE"
     id_col: str = "ID"
     encoding: FeatureEncoding = FeatureEncoding.BINARY
-    feature_threshold: int = 0 # the minimum number of times a medical code occurs in the dataset
+    feature_threshold: int = (
+        0  # the minimum number of times a medical code occurs in the dataset
+    )
     shuffle: bool = True
 
     def get_data_paths(self):
