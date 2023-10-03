@@ -41,12 +41,7 @@ def set_seed():
 
 
 def remove_dir_contents(dir_path: str) -> None:
-    """
-    Removes all contents (files and sub-directories) from a specified directory.
-
-    Args:
-        dir_path (str): Path to the directory from which contents will be removed.
-    """
+    """Removes all contents from a specified directory."""
     print(f"Removing contents of {dir_path}")
     for item in os.listdir(dir_path):
         item_path = os.path.join(dir_path, item)
@@ -63,13 +58,13 @@ def get_path(
     Constructs a directory path based on dataset name, model name, and run name.
 
     Args:
-        dataset_name (str): Name of the dataset.
-        model_name (str): Name of the model.
-        run_name (str): Name of the run.
-        training (bool, optional): If True, appends a "training" subfolder to the path. Defaults to False.
+        dataset_name: Name of the dataset.
+        model_name: Name of the model.
+        run_name: Name of the analysis run.
+        training: If True, appends a "training" subfolder to the path.
 
     Returns:
-        str: Constructed directory path.
+        Constructed directory path.
     """
     current_directory = os.path.dirname(os.path.abspath(__file__))
     parent_directory = os.path.dirname(current_directory)
@@ -88,13 +83,13 @@ def setup_output_dir(
     Sets up the output directory. If directory already exists, prompts user for overwrite. If it doesn't, creates it.
 
     Args:
-        dataset_name (str): Name of the dataset.
-        model_name (str): Name of the model.
-        run_name (str): Name of the run.
-        training (bool, optional): If True, appends a "training" subfolder to the path. Defaults to False.
+        dataset_name: Name of the dataset.
+        model_name: Name of the model.
+        run_name: Name of the run.
+        training: If True, appends a "training" subfolder to the path.
 
     Returns:
-        str: Path to the set up directory.
+        Path to the set up directory.
     """
 
     path = get_path(dataset_name, model_name, run_name, training=training)
@@ -121,13 +116,13 @@ def setup_training_dir(
     Sets up the training directory based on the training mode.
 
     Args:
-        dataset_name (str): Name of the dataset.
-        model_name (str): Name of the model.
-        run_name (str): Name of the run.
-        train_mode (str): Mode of training ('train', 'resume', or 'load').
+        dataset_name: Name of the dataset.
+        model_name: Name of the model.
+        run_name: Name of the run.
+        train_mode: Mode of training ('train', 'resume', or 'load').
 
     Returns:
-        str: Path to the training directory.
+        Path to the training directory.
     """
     if train_mode == "train":
         path = setup_output_dir(dataset_name, model_name, run_name, training=True)
@@ -141,17 +136,8 @@ def setup_training_dir(
 
 
 def setup_logger(run_folder: str, log_file: str = "run.log", level=logging.INFO):
-    """
-    Configures and returns a logger to log messages to the console and a file.
+    """Configures and returns a logger to log messages to the console and a file."""
 
-    Args:
-        run_folder (str): Directory where the log file should be saved.
-        log_file (str, optional): Name of the log file. Defaults to "run.log".
-        level (int, optional): Logging level, e.g., logging.INFO. Defaults to logging.INFO.
-
-    Returns:
-        logging.Logger: Configured logger.
-    """
     log_file_path = os.path.join(run_folder, log_file)
 
     # Define the logger and set the logging level (e.g., DEBUG, INFO, ERROR)
@@ -181,9 +167,9 @@ def save_model(model: nn.Module, run_folder: str, only_weights: bool = True) -> 
     Saves a PyTorch model to a specified directory.
 
     Args:
-        model (nn.Module): PyTorch model to be saved.
-        run_folder (str): Directory where the model should be saved.
-        only_weights (bool, optional): If True, only saves model weights. Otherwise, saves the entire model. Defaults to True.
+        model: PyTorch model to be saved.
+        run_folder: Directory where the model should be saved.
+        only_weights: If True, only saves model weights. Otherwise, saves the entire model.
     """
     if only_weights:
         torch.save(model.state_dict(), f"{run_folder}/weights.pth")
@@ -197,11 +183,11 @@ def load_model(run_folder: str, model: Optional[nn.Module] = None) -> nn.Module:
     Loads a PyTorch model or its weights from a specified directory.
 
     Args:
-        run_folder (str): Directory from which the model or its weights should be loaded.
-        model (Optional[nn.Module], optional): If provided, updates this model's weights. If not provided, a full model is loaded.
+        run_folder: Directory from which the model or its weights should be loaded.
+        model: If provided, updates this model's weights. If not provided, a full model is loaded.
 
     Returns:
-        nn.Module: Loaded model.
+        Loaded model.
     """
     if model:
         if not os.path.exists(f"{run_folder}/weights.pth"):

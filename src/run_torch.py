@@ -27,16 +27,13 @@ def run_torch(
     Trains, loads, and evaluates a model using PyTorch.
 
     Args:
-        config (RunConfig): RunConfiguration object containing runtime settings and model parameters.
-        run_dir (str): Directory to save and retrieve models and logs.
-        train_set (npt.ArrayLike): Training dataset object with attributes x and y.
-        val_set (npt.ArrayLike): Validation dataset object with attributes x and y.
-        test_set (npt.ArrayLike): Test dataset object with attributes x and y.
-        train_mode (str): Either "train" for training or "load" for loading pre-trained model.
-        model_eval (bool, optional): If True, evaluate the model on the test set. Defaults to True.
-
-    Returns:
-        None
+        config: RunConfiguration object containing runtime settings and model parameters.
+        run_dir: Directory to save and retrieve models and logs.
+        train_set: Training dataset object with attributes x and y.
+        val_set: Validation dataset object with attributes x and y.
+        test_set: Test dataset object with attributes x and y.
+        train_mode: Either "train" for training or "load" for loading pre-trained model.
+        model_eval: If True, evaluate the model on the test set.
 
     Raises:
         FileNotFoundError: If model weights are not found when train_mode is "load".
@@ -46,7 +43,6 @@ def run_torch(
     Notes:
         This function is intended for models using the PyTorch library.
         Ensure the correct dependencies are imported when using different functionalities.
-
     """
     if val_set is None:
         raise ValueError(

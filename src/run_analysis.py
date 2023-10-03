@@ -1,21 +1,25 @@
 import argparse
 import sys
 
-from configs.config_scaffold import (DataState, ModelFramework, RunConfig,
-                                     TrainMode)
-from data import (df_to_array, get_x_y, load_data, prep_data_for_modelling,
-                  save_vars_to_pickle, split_data_train_test,
-                  split_data_train_test_val)
+from configs.config_scaffold import DataState, ModelFramework, RunConfig, TrainMode
+from data import (
+    df_to_array,
+    get_x_y,
+    load_data,
+    prep_data_for_modelling,
+    save_vars_to_pickle,
+    split_data_train_test,
+    split_data_train_test_val,
+)
 from run_simple import run_simple
 from run_torch import run_torch
-from utils import (get_path, load_config, set_seed, setup_logger,
-                   setup_output_dir)
+from utils import get_path, load_config, set_seed, setup_logger, setup_output_dir
 
 
 def parse_args():
     """
     Parses command-line arguments for the script using argparse.
-    
+
     Args:
         None
 
@@ -23,8 +27,8 @@ def parse_args():
         argparse.Namespace: Parsed command-line arguments.
 
     Notes:
-        This function sets up the arguments that the main script expects, including configuration 
-        paths, training modes, and evaluation settings. Make sure to provide the necessary arguments 
+        This function sets up the arguments that the main script expects, including configuration
+        paths, training modes, and evaluation settings. Make sure to provide the necessary arguments
         when running the script.
     """
     parser = argparse.ArgumentParser(description="Main pipeline for model processing.")
@@ -55,22 +59,16 @@ def main():
     """
     Main function to run the model processing pipeline based on command-line arguments.
 
-    Args:
-        None
-
-    Returns:
-        None
-
     Raises:
         ValueError: If an unsupported train mode is provided.
         ValueError: If an unsupported data state is provided.
         ValueError: If an unsupported model framework is provided.
 
     Notes:
-        This function retrieves command-line arguments using argparse, loads the configuration settings, 
-        sets up logging, processes the data, and then either trains or loads the model based on the 
-        specified arguments. It supports different frameworks such as scikit-learn and PyTorch, and 
-        also supports different training modes.
+        This function retrieves command-line arguments using argparse, loads the configuration settings,
+        sets up logging, processes the data, and then either trains or loads the model based on the
+        specified arguments. It supports different frameworks such as scikit-learn and PyTorch, and
+        different training modes.
     """
     args = parse_args()
 

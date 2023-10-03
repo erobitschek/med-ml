@@ -31,20 +31,19 @@ def train_simple_model(
     selection using 5-fold cross-validation.
 
     Args:
-        run_dir (str): Directory to save outputs.
-        x_train (npt.ArrayLike): Training feature data.
-        y_train (npt.ArrayLike): Training target data.
-        x_test (npt.ArrayLike): Testing feature data.
-        y_test (npt.ArrayLike): Testing target data.
-        model (Callable): Untrained machine learning model.
-        param_grid (Optional[Dict], optional): Parameters to search over for hyperparameter tuning. Defaults to None.
-        x_val (Optional[npt.ArrayLike], optional): Validation feature data. Defaults to None.
-        y_val (Optional[npt.ArrayLike], optional): Validation target data. Defaults to None.
+        run_dir: Directory to save outputs.
+        x_train: Training feature data.
+        y_train: Training target data.
+        x_test: Testing feature data.
+        y_test: Testing target data.
+        model: Untrained machine learning model.
+        param_grid: Parameters to search over for hyperparameter tuning.
+        x_val: Validation feature data.
+        y_val: Validation target data.
 
     Returns:
-        Callable: Trained scikit-learn model.
+        Trained scikit-learn model.
 
-    The function also outputs model evaluation metrics on the test set for an initial overview of model performance.
     """
     
     if x_val is None:
@@ -91,20 +90,18 @@ def train_pytorch_model(
         model: PyTorch model class instance to be trained.
         train_loader: DataLoader object for training data.
         val_loader: DataLoader object for validation data.
-        train_dir (str): Directory to save training artifacts.
-        logger (logging.Logger): Logger for capturing training progress.
-        device (str, optional): Device on which the model should be trained. Defaults to "cpu".
-        criterion (optional): Loss function to use. Defaults to nn.BCELoss().
-        optimizer (str, optional): Optimizer choice ("adam" or "sgd"). Defaults to "adam".
-        num_epochs (int, optional): Total number of epochs for training. Defaults to 100.
-        learning_rate (float): Learning rate for the optimizer.
-        start_epoch (int, optional): Epoch to begin training. Useful for resuming training. Defaults to 0.
-        patience (int, optional): Patience parameter for early stopping. Defaults to 20.
-        checkpoint_freq (int, optional): Frequency for saving model checkpoints. Defaults to 10.
-        save_path (str, optional): Directory path to save the best model weights. Defaults to train_dir.
+        train_dir: Directory to save training artifacts.
+        logger: Logger for capturing training progress.
+        device: Device on which the model should be trained.
+        criterion: Loss function to use.
+        optimizer: Optimizer choice ("adam" or "sgd").
+        num_epochs: Total number of epochs for training.
+        learning_rate: Learning rate for the optimizer.
+        start_epoch: Epoch to begin training. Useful for resuming training.
+        patience: Patience parameter for early stopping.
+        checkpoint_freq: Frequency for saving model checkpoints.
+        save_path: Directory path to save the best model weights.
 
-    Returns:
-        None
     """
     if save_path is None:
         save_path = train_dir

@@ -24,19 +24,16 @@ def run_simple(
     Trains, loads, and evaluates a simple model using scikit-learn.
 
     Args:
-        config (RunConfig): RunConfiguration object containing runtime settings and model parameters.
-        run_dir (str): Directory to save and retrieve models and logs.
-        train_set (npt.ArrayLike): Training dataset object with attributes x and y.
-        test_set (npt.ArrayLike): Test dataset object with attributes x and y.
-        train_mode (str): Either "train" for training or "load" for loading pre-trained model.
-        val_set (Optional[npt.ArrayLike], optional): Validation dataset object with attributes x and y. Defaults to None.
-        model_eval (bool, optional): If True, evaluate the model on the test set. Defaults to True.
-
-    Returns:
-        None
+        config: RunConfiguration object containing runtime settings and model parameters.
+        run_dir: Directory to save and retrieve models and logs.
+        train_set: Training dataset object with attributes x and y.
+        test_set: Test dataset object with attributes x and y.
+        train_mode: Either "train" for training or "load" for loading pre-trained model.
+        val_set: Validation dataset object with attributes x and y.
+        model_eval: If True, evaluate the model on the test set.
 
     Notes:
-        This function is intended for testing simple, non-deep learning models.
+        This function is intended for testing simple, non-neural network models.
     """
     logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
     model_path = f"{run_dir}/{config.model.name}_{config.model.framework}_model.joblib"
