@@ -194,18 +194,17 @@ def train_lgbm(
     logger: Logger,
     save_model: bool = True,
 ) -> lgb.Booster:
-    """
-    Train a LightGBM model with optional grid search. If grid search is enabled, the best parameters
+    """Train a LightGBM model with optional grid search. If grid search is enabled, the best parameters
     will be saved to a YAML file.
 
     Args:
-        run_dir (str): Directory where results and metadata will be saved.
-        config (RunConfig): Configuration object for the run.
-        train_set (DataSplit): Data split object containing training data.
-        val_set (DataSplit): Data split object containing validation data.
-        model (Callable): Untrained LGBM model or similar API.
-        logger (Logger): Logging object.
-        save_model (bool, optional): If True, save the trained model to disk.
+        run_dir: Directory where results and metadata will be saved.
+        config: Configuration object for the run.
+        train_set: Data split object containing training data.
+        val_set: Data split object containing validation data.
+        model: Untrained LGBM model or similar API.
+        logger: Logging object.
+        save_model: If True, save the trained model to disk.
 
     Returns:
         lgb.Booster: Trained model.
@@ -242,7 +241,7 @@ def train_lgbm(
 
             if config.model.patience is not None:
                 logger.info(
-                    f"Early stopping enabled w/ {config.model.patience} patience ."
+                    f"Early stopping enabled w/ {config.model.patience} patience."
                 )
                 callbacks.append(
                     lgb.early_stopping(stopping_rounds=config.model.patience)

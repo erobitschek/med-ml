@@ -106,19 +106,18 @@ def run_lgbm(
     val_set: Optional[npt.ArrayLike] = None,
     model_eval: bool = True,
 ) -> None:
-    """
-    Trains, loads, or resumes an LGBM model based on the specified train_mode. Additionally,
+    """Trains, loads, or resumes an LGBM model based on the specified train_mode. Additionally,
     it evaluates the model on the test set if model_eval is True.
 
     Args:
-        config (RunConfig): Configuration object for the run.
-        run_dir (str): Directory where results and model will be saved or loaded.
-        train_set (npt.ArrayLike): Training data.
-        test_set (npt.ArrayLike): Test data for evaluation.
-        logger (Logger): Logging object.
-        train_mode (str): Either "train" for training or "load" for loading pre-trained model.
-        val_set (Optional[npt.ArrayLike], optional): Optional validation data.
-        model_eval (bool, optional): If True, evaluates the model on the test set.
+        config: Configuration object for the run.
+        run_dir: Directory where results and model will be saved or loaded.
+        train_set: Training data.
+        test_set: Test data for evaluation.
+        logger: Logging object.
+        train_mode: Either "train" for training or "load" for loading pre-trained model.
+        val_set: Optional validation data.
+        model_eval: If True, evaluates the model on the test set.
 
     Raises:
         FileNotFoundError: If trying to load a model that doesn't exist.
