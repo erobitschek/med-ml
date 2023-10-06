@@ -19,23 +19,24 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
+from sklearn.linear_model import LogisticRegression as skLogisticRegression
 from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
 
 from configs.config_scaffold import RunConfig
 from data import DataSplit
 from utils import save_model
-
+ModelType = Callable[..., skLogisticRegression]
 
 def train_simple_model(
     run_dir: str,
     x_train: npt.ArrayLike,
     y_train: npt.ArrayLike,
-    model: Callable,
+    model: ModelType,
     param_grid: Optional[Dict] = None,
     x_val: Optional[npt.ArrayLike] = None,
     y_val: Optional[npt.ArrayLike] = None,
-) -> Callable:
+) -> ModelType:
     """Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs
     hyperparameter selection using 5-fold cross-validation.
 
@@ -43,8 +44,6 @@ def train_simple_model(
         run_dir: Directory to save outputs.
         x_train: Training feature data.
         y_train: Training target data.
-        x_test: Testing feature data.
-        y_test: Testing target data.
         model: Untrained machine learning model.
         param_grid: Parameters to search over for hyperparameter tuning.
         x_val: Validation feature data.
@@ -190,7 +189,7 @@ def gridsearch_lgbm(
     run_dir: str,
     config: RunConfig,
     train_set: DataSplit,
-    model: Callable,
+    model: lgb.LGBMClassifier,
     logger: Logger,
 ) -> lgb.Booster:
     """Run a grid search for a LightGBM model. The best parameters will be saved to a YAML file.
@@ -230,7 +229,7 @@ def train_lgbm(
     config: RunConfig,
     train_set: DataSplit,
     val_set: DataSplit,
-    model: Callable,
+    model: lgb.LGBMClassifier,
     logger: Logger,
     model_path: str,
 ) -> lgb.Booster:

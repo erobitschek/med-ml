@@ -40,7 +40,7 @@ def run_simple(
     """
     model_path = os.path.join(run_dir, "model.txt")
 
-    if train_mode == TrainMode.TRAIN:
+    if train_mode == TrainMode.TRAIN.name.lower():
         logger.info("Training sklearn framework of model...")
 
         if val_set is None:
@@ -48,8 +48,6 @@ def run_simple(
                 run_dir=run_dir,
                 x_train=train_set.x,
                 y_train=train_set.y,
-                x_test=test_set.x,
-                y_test=test_set.y,
                 model=skLogisticRegression(max_iter=config.model.epochs),
                 param_grid=config.model.param_grid,
             )
@@ -59,8 +57,6 @@ def run_simple(
                 run_dir=run_dir,
                 x_train=train_set.x,
                 y_train=train_set.y,
-                x_test=test_set.x,
-                y_test=test_set.y,
                 model=skLogisticRegression(max_iter=config.model.epochs),
                 param_grid=config.model.param_grid,
                 x_val=val_set.x,
@@ -71,14 +67,14 @@ def run_simple(
         dump(model, model_path)
         logger.info(f"Model saved to .joblib file")
 
-    elif train_mode == TrainMode.LOAD:
+    elif train_mode == TrainMode.LOAD.name.lower():
         if not os.path.exists(model_path):
             raise FileNotFoundError("Model file not found")
 
         model = lgb.Booster(model_file=model_path)
         logger.info(f"Model loaded from previous training")
 
-    elif train_mode == TrainMode.RESUME:
+    elif train_mode == TrainMode.RESUME.name.lower():
         raise NotImplementedError("Resume training is not implemented yet.")
 
     if model_eval:
