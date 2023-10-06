@@ -42,7 +42,7 @@ class SplitRatios:
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class ModelConfig:
     name: str
     learning_rate: float
@@ -58,7 +58,7 @@ class ModelConfig:
     # TODO: add post init that adds some parameters based on framework
 
 
-@dataclass(frozen=True)
+@dataclass
 class DatasetConfig:
     name: str
     project: str

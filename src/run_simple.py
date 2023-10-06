@@ -7,9 +7,10 @@ import numpy.typing as npt
 from joblib import dump, load
 from sklearn.linear_model import LogisticRegression as skLogisticRegression
 
+from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from eval import run_eval
-from train import train_lgbm, train_simple_model
+from train import gridsearch_lgbm, train_lgbm, train_simple_model
 from utils import setup_logger
 
 
@@ -19,12 +20,12 @@ def run_simple(
     train_set: npt.ArrayLike,
     test_set: npt.ArrayLike,
     logger: Logger,
-    train_mode: str,
+    train_mode: TrainMode = TrainMode.TRAIN,
     val_set: Optional[npt.ArrayLike] = None,
     model_eval: bool = True,
 ) -> None:
-    """Trains, loads, and evaluates a simple model using scikit-learn. 
-    
+    """Trains, loads, and evaluates a simple model using scikit-learn.
+
     This function is intended for testing simple, non-neural network models.
 
     Args:
@@ -37,9 +38,9 @@ def run_simple(
         val_set: Validation dataset object with attributes x and y.
         model_eval: If True, evaluate the model on the test set.
     """
-    model_path = f"{run_dir}/{config.model.name}_{config.model.framework}_model.joblib"
+    model_path = os.path.join(run_dir, "model.txt")
 
-    if train_mode == "train":
+    if train_mode == TrainMode.TRAIN:
         logger.info("Training sklearn framework of model...")
 
         if val_set is None:
@@ -70,14 +71,14 @@ def run_simple(
         dump(model, model_path)
         logger.info(f"Model saved to .joblib file")
 
-    elif train_mode == "load":
-        if os.path.exists(model_path):
-            model = load(model_path)
-            logger.info(f"Model loaded from previous training")
-        else:
+    elif train_mode == TrainMode.LOAD:
+        if not os.path.exists(model_path):
             raise FileNotFoundError("Model file not found")
 
-    elif train_mode == "resume":
+        model = lgb.Booster(model_file=model_path)
+        logger.info(f"Model loaded from previous training")
+
+    elif train_mode == TrainMode.RESUME:
         raise NotImplementedError("Resume training is not implemented yet.")
 
     if model_eval:
@@ -102,12 +103,13 @@ def run_lgbm(
     train_set: npt.ArrayLike,
     test_set: npt.ArrayLike,
     logger: Logger,
-    train_mode: str,
+    train_mode: TrainMode = TrainMode.TRAIN,
     val_set: Optional[npt.ArrayLike] = None,
     model_eval: bool = True,
 ) -> None:
     """Trains, loads, or resumes an LGBM model based on the specified train_mode. Additionally,
-    it evaluates the model on the test set if model_eval is True.
+    it evaluates the model on the test set if model_eval is True. If the grid search parameter 
+    is True in the config, a grid search is run instead of training.
 
     Args:
         config: Configuration object for the run.
@@ -123,42 +125,44 @@ def run_lgbm(
         FileNotFoundError: If trying to load a model that doesn't exist.
         NotImplementedError: If trying to resume a model which is not implemented yet.
     """
-    model_path = f"{run_dir}/model.txt"
+    model_path = os.path.join(run_dir, "model.pkl")
 
-    if train_mode == "train":
+    if config.model.grid_search:
+        model = gridsearch_lgbm(
+            run_dir=run_dir,
+            config=config,
+            train_set=train_set,
+            model=lgb.LGBMClassifier(**config.model.params),
+            logger=logger,
+        )
+
+    if train_mode == TrainMode.TRAIN.name.lower():
         logger.info("Training lgbm framework of model...")
 
         model = train_lgbm(
             run_dir=run_dir,
+            config=config,
             train_set=train_set,
             val_set=val_set,
             model=lgb.LGBMClassifier(**config.model.params),
-            config=config,
             logger=logger,
+            model_path=model_path
         )
 
-        logger.info(
-            f"Training finished. Model type trained: {type(model)}. Best iteration: {model.booster_.best_iteration}."
-        )
-        model.booster_.save_model(model_path)
-        logger.info(f"Model saved to .txt file")
-
-    elif train_mode == "load":
-        if os.path.exists(model_path):
-            model = lgb.Booster(model_file=model_path)
-            logger.info(f"Model loaded from previous training")
-        else:
+    elif train_mode == TrainMode.LOAD.name.lower():
+        if not os.path.exists(model_path):
             raise FileNotFoundError("Model file not found")
 
-    elif train_mode == "resume":
+        model = load(model_path)
+        logger.info(f"Model loaded from previous training")
+
+    elif train_mode == TrainMode.RESUME.name.lower():
         raise NotImplementedError("Resume training is not implemented yet.")
 
     if model_eval:
         logger.info(f"Predicting on test set...")
-        probabilities = model.predict(
-            test_set.x, num_iteration=model.booster_.best_iteration
-        )
-        predictions = probabilities > 0.5
+        probabilities = model.predict_proba(test_set.x)
+        predictions = model.predict(test_set.x)
 
         run_eval(
             predictions=predictions,

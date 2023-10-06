@@ -1,3 +1,4 @@
+import os
 from logging import Logger
 from typing import Callable, Dict, List, Optional
 
@@ -35,7 +36,7 @@ def train_simple_model(
     x_val: Optional[npt.ArrayLike] = None,
     y_val: Optional[npt.ArrayLike] = None,
 ) -> Callable:
-    """Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs 
+    """Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs
     hyperparameter selection using 5-fold cross-validation.
 
     Args:
@@ -185,17 +186,14 @@ def train_pytorch_model(
         yaml.dump({"train_loss": train_losses, "val_loss": val_losses}, f)
 
 
-def train_lgbm(
+def gridsearch_lgbm(
     run_dir: str,
     config: RunConfig,
     train_set: DataSplit,
-    val_set: DataSplit,
     model: Callable,
     logger: Logger,
-    save_model: bool = True,
 ) -> lgb.Booster:
-    """Train a LightGBM model with optional grid search. If grid search is enabled, the best parameters
-    will be saved to a YAML file.
+    """Run a grid search for a LightGBM model. The best parameters will be saved to a YAML file.
 
     Args:
         run_dir: Directory where results and metadata will be saved.
@@ -207,51 +205,76 @@ def train_lgbm(
         save_model: If True, save the trained model to disk.
 
     Returns:
-        lgb.Booster: Trained model.
+        lgb.Booster: Model post grid search.
 
     Raises:
         ValueError: If grid search is attempted without a specified parameter grid.
     """
-    if config.model.grid_search:
-        try:
-            logger.info("Performing a grid search for the best parameters...")
-            grid = GridSearchCV(
-                estimator=model, param_grid=config.model.param_grid, cv=5
-            )
-            grid.fit(train_set.x, train_set.y)
-            model = grid.best_estimator_
-            logger.info(grid.best_params_)
-            with open(f"{run_dir}/grid_search.yaml", "w") as f:
-                yaml.dump({f"best_params": grid.best_params_}, f)
-            return model
-        except ValueError:
-            logger.info(
-                "Provide a parameter grid in the config file in order to run a grid search."
-            )
-            return
-
-    else:
-        logger.info(f"Training a {type(model)} model...")
-
-        callbacks = []
-
-        eval_set = None
-        if val_set:
-            eval_set = [(val_set.x, val_set.y)]
-
-            if config.model.patience is not None:
-                logger.info(
-                    f"Early stopping enabled w/ {config.model.patience} patience."
-                )
-                callbacks.append(
-                    lgb.early_stopping(stopping_rounds=config.model.patience)
-                )
-
-        model = model.fit(
-            train_set.x,
-            train_set.y,
-            eval_set=eval_set,
-            callbacks=callbacks,
+    if config.model.param_grid is None:
+        raise ValueError(
+            "Provide a parameter grid in the config file in order to run a grid search."
         )
+
+    logger.info("Performing a grid search for the best parameters...")
+    grid = GridSearchCV(estimator=model, param_grid=config.model.param_grid, cv=5)
+    grid.fit(train_set.x, train_set.y)
+    model = grid.best_estimator_
+    logger.info(grid.best_params_)
+    with open(f"{run_dir}/grid_search.yaml", "w") as f:
+        yaml.dump({f"best_params": grid.best_params_}, f)
+    return model
+
+
+def train_lgbm(
+    run_dir: str,
+    config: RunConfig,
+    train_set: DataSplit,
+    val_set: DataSplit,
+    model: Callable,
+    logger: Logger,
+    model_path: str,
+) -> lgb.Booster:
+    """Train a LightGBM model. Save it to the run directory.
+
+    Early stopping is enabled if a validation set is provided and patience is not None in the config.
+
+    Args:
+        run_dir: Directory where results and metadata will be saved.
+        config: Configuration object for the run.
+        train_set: Data split object containing training data.
+        val_set: Data split object containing validation data.
+        model: Untrained LGBM model or similar API.
+        logger: Logging object.
+
+    Returns:
+        lgb.Booster: Trained model.
+
+    """
+
+    logger.info(f"Training a {type(model)} model...")
+
+    callbacks = []
+    eval_set = None
+
+    if val_set:
+        eval_set = [(val_set.x, val_set.y)]
+
+        if config.model.patience is not None:
+            logger.info(f"Early stopping enabled w/ {config.model.patience} patience.")
+            callbacks.append(lgb.early_stopping(stopping_rounds=config.model.patience))
+
+    model = model.fit(
+        train_set.x,
+        train_set.y,
+        eval_set=eval_set,
+        callbacks=callbacks,
+    )
+
+    logger.info(
+        f"Training finished. Model type trained: {type(model)}. Best iteration: {model.booster_.best_iteration}."
+    )
+
+    dump(model, model_path)
+    logger.info(f"Model saved to .pkl file")
 
     return model
