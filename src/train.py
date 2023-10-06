@@ -1,12 +1,15 @@
-import logging
-from typing import Callable, Dict, Optional
+import os
+from logging import Logger
+from typing import Callable, Dict, List, Optional
 
+import lightgbm as lgb
 import numpy as np
 import numpy.typing as npt
 import torch as torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+from joblib import dump
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -16,31 +19,31 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
+from sklearn.linear_model import LogisticRegression as skLogisticRegression
 from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
 
+from configs.config_scaffold import RunConfig
+from data import DataSplit
 from utils import save_model
-
+ModelType = Callable[..., skLogisticRegression]
 
 def train_simple_model(
     run_dir: str,
     x_train: npt.ArrayLike,
     y_train: npt.ArrayLike,
-    x_test: npt.ArrayLike,
-    model: Callable,
+    model: ModelType,
     param_grid: Optional[Dict] = None,
     x_val: Optional[npt.ArrayLike] = None,
     y_val: Optional[npt.ArrayLike] = None,
-) -> Callable:
-    """Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs hyperparameter
-    selection using 5-fold cross-validation.
+) -> ModelType:
+    """Trains a scikit-learn model using the provided data. If a parameter grid is provided, it performs
+    hyperparameter selection using 5-fold cross-validation.
 
     Args:
         run_dir: Directory to save outputs.
         x_train: Training feature data.
         y_train: Training target data.
-        x_test: Testing feature data.
-        y_test: Testing target data.
         model: Untrained machine learning model.
         param_grid: Parameters to search over for hyperparameter tuning.
         x_val: Validation feature data.
@@ -75,7 +78,7 @@ def train_pytorch_model(
     train_loader,
     val_loader,
     train_dir: str,
-    logger: logging.Logger,
+    logger: Logger,
     device="cpu",
     criterion=nn.BCELoss(),
     optimizer="adam",
@@ -180,3 +183,97 @@ def train_pytorch_model(
 
     with open(f"{train_dir}/loss.yaml", "w") as f:
         yaml.dump({"train_loss": train_losses, "val_loss": val_losses}, f)
+
+
+def gridsearch_lgbm(
+    run_dir: str,
+    config: RunConfig,
+    train_set: DataSplit,
+    model: lgb.LGBMClassifier,
+    logger: Logger,
+) -> lgb.Booster:
+    """Run a grid search for a LightGBM model. The best parameters will be saved to a YAML file.
+
+    Args:
+        run_dir: Directory where results and metadata will be saved.
+        config: Configuration object for the run.
+        train_set: Data split object containing training data.
+        val_set: Data split object containing validation data.
+        model: Untrained LGBM model or similar API.
+        logger: Logging object.
+        save_model: If True, save the trained model to disk.
+
+    Returns:
+        lgb.Booster: Model post grid search.
+
+    Raises:
+        ValueError: If grid search is attempted without a specified parameter grid.
+    """
+    if config.model.param_grid is None:
+        raise ValueError(
+            "Provide a parameter grid in the config file in order to run a grid search."
+        )
+
+    logger.info("Performing a grid search for the best parameters...")
+    grid = GridSearchCV(estimator=model, param_grid=config.model.param_grid, cv=5)
+    grid.fit(train_set.x, train_set.y)
+    model = grid.best_estimator_
+    logger.info(grid.best_params_)
+    with open(f"{run_dir}/grid_search.yaml", "w") as f:
+        yaml.dump({f"best_params": grid.best_params_}, f)
+    return model
+
+
+def train_lgbm(
+    run_dir: str,
+    config: RunConfig,
+    train_set: DataSplit,
+    val_set: DataSplit,
+    model: lgb.LGBMClassifier,
+    logger: Logger,
+    model_path: str,
+) -> lgb.Booster:
+    """Train a LightGBM model. Save it to the run directory.
+
+    Early stopping is enabled if a validation set is provided and patience is not None in the config.
+
+    Args:
+        run_dir: Directory where results and metadata will be saved.
+        config: Configuration object for the run.
+        train_set: Data split object containing training data.
+        val_set: Data split object containing validation data.
+        model: Untrained LGBM model or similar API.
+        logger: Logging object.
+
+    Returns:
+        lgb.Booster: Trained model.
+
+    """
+
+    logger.info(f"Training a {type(model)} model...")
+
+    callbacks = []
+    eval_set = None
+
+    if val_set:
+        eval_set = [(val_set.x, val_set.y)]
+
+        if config.model.patience is not None:
+            logger.info(f"Early stopping enabled w/ {config.model.patience} patience.")
+            callbacks.append(lgb.early_stopping(stopping_rounds=config.model.patience))
+
+    model = model.fit(
+        train_set.x,
+        train_set.y,
+        eval_set=eval_set,
+        callbacks=callbacks,
+    )
+
+    logger.info(
+        f"Training finished. Model type trained: {type(model)}. Best iteration: {model.booster_.best_iteration}."
+    )
+
+    dump(model, model_path)
+    logger.info(f"Model saved to .pkl file")
+
+    return model

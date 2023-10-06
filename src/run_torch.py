@@ -1,3 +1,5 @@
+from logging import Logger
+
 import numpy.typing as npt
 import torch
 import torch.nn as nn
@@ -20,6 +22,7 @@ def run_torch(
     train_set: npt.ArrayLike,
     val_set: npt.ArrayLike,
     test_set: npt.ArrayLike,
+    logger: Logger,
     train_mode: str,
     model_eval: bool = True,
 ):
@@ -46,7 +49,6 @@ def run_torch(
             "A validation set is required for the PyTorch model implementation. Adjust split ratios."
         )
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    logger = setup_logger(run_folder=run_dir, log_file=f"{config.run_name}_run.log")
 
     train_loader, test_loader, val_loader = get_dataloaders(
         dataset=config.dataset.name,

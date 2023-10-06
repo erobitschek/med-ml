@@ -11,7 +11,8 @@ from data import (
     split_data_train_test,
     split_data_train_test_val,
 )
-from run_simple import run_simple
+
+from run_simple import run_lgbm, run_simple
 from run_torch import run_torch
 from utils import get_path, load_config, set_seed, setup_logger, setup_output_dir
 
@@ -106,6 +107,18 @@ def main():
             train_set=train_set,
             val_set=val_set,
             test_set=test_set,
+            logger=logger,
+            train_mode=args.train_mode,
+            model_eval=args.model_eval,
+        )
+    elif config.model.framework == ModelFramework.LIGHTGBM:
+        run_lgbm(
+            config=config,
+            run_dir=run_dir,
+            train_set=train_set,
+            val_set=val_set,
+            test_set=test_set,
+            logger=logger,
             train_mode=args.train_mode,
             model_eval=args.model_eval,
         )
@@ -116,6 +129,7 @@ def main():
             train_set=train_set,
             val_set=val_set,
             test_set=test_set,
+            logger=logger,
             train_mode=args.train_mode,
             model_eval=args.model_eval,
         )

@@ -42,7 +42,7 @@ class SplitRatios:
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class ModelConfig:
     name: str
     learning_rate: float
@@ -50,13 +50,15 @@ class ModelConfig:
     epochs: int = 500
     framework: ModelFramework = ModelFramework.SKLEARN
     dropout_rate: float = 0.5
-    patience: int = 20
+    patience: int = None
+    params: dict = None  # param dict for lgbm model
     param_grid: dict = None  # for grid search to find optimal model parameters
+    grid_search: bool = False  # whether to perform the grid search
 
     # TODO: add post init that adds some parameters based on framework
 
 
-@dataclass(frozen=True)
+@dataclass
 class DatasetConfig:
     name: str
     project: str

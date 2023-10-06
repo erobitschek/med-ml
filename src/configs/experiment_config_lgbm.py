@@ -4,11 +4,26 @@ config = RunConfig(
     run_name="test_lightgbm",
     model=ModelConfig(
         name="gbm",
-        learning_rate=0.005,
+        learning_rate=0.01,
         batch_size=32,
-        epochs=500,
+        epochs=2000,
         framework=ModelFramework.LIGHTGBM,
-        param_grid= None,
+        patience=10,
+        grid_search=False,
+        params={
+            "objective": "binary",
+            "n_estimators": 1000,
+            "metric": "auc",  # can add 'binary_logloss' for log loss as well
+            "boosting_type": "gbdt",
+            "num_leaves": 50,
+            "learning_rate": 0.05,
+            "feature_fraction": 0.9,
+            "is_unbalance": False,
+        },
+        param_grid={
+            "learning_rate": [0.01, 0.05],
+            "num_leaves": [31, 50],
+        },
     ),
     dataset=DatasetConfig(
         name="synth_10000pts",
