@@ -12,8 +12,8 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-from data import DataSplit
 from predict import save_predictions_to_file
+from vis import plot_confusion_matrix
 
 
 def evaluate_predictions(
@@ -69,7 +69,7 @@ def save_evaluation_summary(
 def run_eval(
     predictions: npt.ArrayLike,
     probabilities: npt.ArrayLike,
-    true_labels: DataSplit,
+    true_labels: npt.ArrayLike,
     run_dir: str,
     logger: logging.Logger,
 ) -> None:
@@ -79,7 +79,7 @@ def run_eval(
     Args:
         predictions: Array-like of model predictions.
         probabilities: Array-like of predicted probabilities.
-        true_labels: DataSplit object containing the true labels.
+        true_labels: true labels from the desired DataSplit
         run_dir: Directory where predictions, probabilities, and evaluation summary will be saved.
         logger: Logger object to log the process and results.
     """
@@ -88,6 +88,7 @@ def run_eval(
     )
     logger.info(f"Saving predictions to {run_dir}")
     save_predictions_to_file(
+        true_values=true_labels,
         predictions=predictions,
         probabilities=probabilities,
         run_folder=run_dir,
@@ -104,3 +105,12 @@ def run_eval(
         filename=f"evaluation_summary.json",
     )
     logger.info(f"Saved evaluation summary.")
+
+    logger.info(f"Plotting confusion matrix...")
+    plot_confusion_matrix(
+        run_dir=run_dir,
+        true_labels=true_labels,
+        predictions=predictions,
+        classes=["0", "1"],
+        normalize=False,
+    )
