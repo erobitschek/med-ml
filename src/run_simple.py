@@ -11,7 +11,6 @@ from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from eval import run_eval
 from train import gridsearch_lgbm, train_lgbm, train_simple_model
-from utils import setup_logger
 
 
 def run_simple(
