@@ -88,6 +88,7 @@ def run_simple(
             probabilities=probabilities,
             true_labels=test_set.y,
             run_dir=run_dir,
+            config=config,
             logger=logger,
         )
 
@@ -164,5 +165,6 @@ def run_lgbm(
             probabilities=probabilities,
             true_labels=test_set.y,
             run_dir=run_dir,
+            config=config,
             logger=logger,
         )

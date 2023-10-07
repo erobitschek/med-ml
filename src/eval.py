@@ -12,6 +12,7 @@ from sklearn.metrics import (
     roc_curve,
 )
 
+from configs.config_scaffold import RunConfig
 from predict import save_predictions_to_file
 from vis import plot_confusion_matrix
 
@@ -71,6 +72,7 @@ def run_eval(
     probabilities: npt.ArrayLike,
     true_labels: npt.ArrayLike,
     run_dir: str,
+    config: RunConfig,
     logger: logging.Logger,
 ) -> None:
     """Runs the evaluation process by saving predictions and probabilities, then evaluates the model predictions and
@@ -88,7 +90,6 @@ def run_eval(
     )
     logger.info(f"Saving predictions to {run_dir}")
     save_predictions_to_file(
-        true_values=true_labels,
         predictions=predictions,
         probabilities=probabilities,
         run_folder=run_dir,
@@ -111,6 +112,6 @@ def run_eval(
         run_dir=run_dir,
         true_labels=true_labels,
         predictions=predictions,
-        classes=["0", "1"],
+        classes=config.dataset.class_names,
         normalize=False,
     )
