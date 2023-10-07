@@ -1,6 +1,6 @@
 import os
 from logging import Logger
-from typing import Callable, Dict, List, Optional
+from typing import Dict, Optional, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -26,7 +26,8 @@ from tqdm import tqdm
 from configs.config_scaffold import RunConfig
 from data import DataSplit
 from utils import save_model
-ModelType = Callable[..., skLogisticRegression]
+
+ModelType = Union[skLogisticRegression, lgb.LGBMClassifier]
 
 def train_simple_model(
     run_dir: str,
