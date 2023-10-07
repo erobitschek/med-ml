@@ -171,4 +171,5 @@ notebooks/
 sandbox/
 src/*.ipynb
 code_ideas.py
+custom_data.py
 notes_for_readme_tables.md
