@@ -166,7 +166,7 @@ cython_debug/
 # folders
 data/
 out/
-#configs/!example.py
+src/configs/*test.py
 notebooks/
 sandbox/
 src/*.ipynb
