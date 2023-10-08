@@ -113,5 +113,5 @@ def run_eval(
         true_labels=true_labels,
         predictions=predictions,
         classes=config.dataset.class_names,
-        normalize=False,
+        normalize=None,
     )
