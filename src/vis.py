@@ -46,27 +46,25 @@ def plot_confusion_matrix(
     true_labels: npt.ArrayLike,
     predictions: npt.ArrayLike,
     classes: list = ["0", "1"],
-    normalize: Optional[bool] = False,
-    title: str="confusion_matrix",
+    normalize: bool = None,  # values can be ‘true’, ‘pred’, ‘all’ or None
+    title: str = "confusion_matrix",
     cmap: plt.cm = plt.cm.YlGnBu,
+    fmt: str = "d",
 ):
-    """
-    Helper function to plot a confusion matrix with the ability to normalize the output with `normalize=True`.
+    """Helper function to plot a confusion matrix.
 
-    Parameters
-    ----------
-    run_dir: path to the directory containing the predictions.txt file and where the plot should be saved
-    classes: a list of the possible classes for the test set
-    normalize: produces a normalized version of the heatmap (sometimes more informative)
-    title: name of the plot to put in the figure
-    cmap: sets the colormap to use for the heatmap
+    Args:
+        run_dir: path to the directory containing the predictions.txt file and where the plot should be saved
+        classes: a list of the possible classes for the test set
+        normalize: If not None, normalizes the matrix over the true (rows), predicted (columns) conditions or
+        all the population.
+        title: name of the plot to put in the figure
+        cmap: sets the colormap to use for the heatmap
     """
-    cm = confusion_matrix(true_labels, predictions)
-    fmt = "d"
+    cm = confusion_matrix(true_labels, predictions, normalize=normalize)
 
-    if normalize:
+    if not normalize is None:
         fmt = ".2f"
-        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
         title = "confusion_matrix_normalized"
 
     plt.imshow(cm, interpolation="nearest", cmap=cmap)
@@ -76,16 +74,22 @@ def plot_confusion_matrix(
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
 
-    thresh = cm.max() / 2.0
+    thresh = (
+        cm.max() / 2.0
+    )  # threshold for text color (due to darkening background color)
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(
-            j,
-            i,
-            format(cm[i, j], fmt),
+            x=j,
+            y=i,
+            s=format(cm[i, j], fmt),
             horizontalalignment="center",
             color="white" if cm[i, j] > thresh else "black",
         )
-
-    plt.ylabel("True label")
     plt.xlabel("Predicted label")
-    plt.savefig(f"{run_dir}{title}.pdf", format="pdf", bbox_inches="tight", dpi=300)
+    plt.ylabel("True label")
+    plt.savefig(
+        os.path.join(run_dir, f"{title}.pdf"),
+        format="pdf",
+        bbox_inches="tight",
+        dpi=300,
+    )
