@@ -5,6 +5,7 @@ from typing import Dict
 import numpy.typing as npt
 from sklearn.metrics import (
     balanced_accuracy_score,
+    classification_report,
     f1_score,
     precision_score,
     recall_score,
@@ -115,3 +116,6 @@ def run_eval(
         classes=config.dataset.class_names,
         normalize=None,
     )
+    logger.info(f"Classification report for {config.run_name}:")
+    logger.info(classification_report(true_labels, predictions, target_names=config.dataset.class_names))
+
