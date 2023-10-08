@@ -11,7 +11,6 @@ from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from eval import run_eval
 from train import gridsearch_lgbm, train_lgbm, train_simple_model
-from utils import setup_logger
 
 
 def run_simple(
@@ -89,6 +88,7 @@ def run_simple(
             probabilities=probabilities,
             true_labels=test_set.y,
             run_dir=run_dir,
+            config=config,
             logger=logger,
         )
 
@@ -165,5 +165,6 @@ def run_lgbm(
             probabilities=probabilities,
             true_labels=test_set.y,
             run_dir=run_dir,
+            config=config,
             logger=logger,
         )

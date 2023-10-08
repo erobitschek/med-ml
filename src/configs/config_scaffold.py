@@ -65,6 +65,7 @@ class DatasetConfig:
     path: str
     target: str
     split_ratios: SplitRatios
+    class_names: list = field(default_factory=lambda: ["0", "1"]) # assumes binary classification
     medcode_col: str = "CODE"
     id_col: str = "ID"
     encoding: FeatureEncoding = FeatureEncoding.BINARY

@@ -5,6 +5,7 @@ from typing import Dict
 import numpy.typing as npt
 from sklearn.metrics import (
     balanced_accuracy_score,
+    classification_report,
     f1_score,
     precision_score,
     recall_score,
@@ -12,8 +13,9 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-from data import DataSplit
+from configs.config_scaffold import RunConfig
 from predict import save_predictions_to_file
+from vis import plot_confusion_matrix
 
 
 def evaluate_predictions(
@@ -69,8 +71,9 @@ def save_evaluation_summary(
 def run_eval(
     predictions: npt.ArrayLike,
     probabilities: npt.ArrayLike,
-    true_labels: DataSplit,
+    true_labels: npt.ArrayLike,
     run_dir: str,
+    config: RunConfig,
     logger: logging.Logger,
 ) -> None:
     """Runs the evaluation process by saving predictions and probabilities, then evaluates the model predictions and
@@ -79,7 +82,7 @@ def run_eval(
     Args:
         predictions: Array-like of model predictions.
         probabilities: Array-like of predicted probabilities.
-        true_labels: DataSplit object containing the true labels.
+        true_labels: true labels from the desired DataSplit
         run_dir: Directory where predictions, probabilities, and evaluation summary will be saved.
         logger: Logger object to log the process and results.
     """
@@ -104,3 +107,15 @@ def run_eval(
         filename=f"evaluation_summary.json",
     )
     logger.info(f"Saved evaluation summary.")
+
+    logger.info(f"Plotting confusion matrix...")
+    plot_confusion_matrix(
+        run_dir=run_dir,
+        true_labels=true_labels,
+        predictions=predictions,
+        classes=config.dataset.class_names,
+        normalize=None,
+    )
+    logger.info(f"Classification report for {config.run_name}:")
+    logger.info(classification_report(true_labels, predictions, target_names=config.dataset.class_names))
+
