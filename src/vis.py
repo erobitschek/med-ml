@@ -55,11 +55,13 @@ def plot_confusion_matrix(
 
     Args:
         run_dir: path to the directory containing the predictions.txt file and where the plot should be saved
+        true_labels: true labels
+        predictions: model predictions
         classes: a list of the possible classes for the test set
-        normalize: If not None, normalizes the matrix over the true (rows), predicted (columns) conditions or
-        all the population.
+        normalize: If not None, normalizes the matrix over the true (rows), predicted (columns) or all values
         title: name of the plot to put in the figure
         cmap: sets the colormap to use for the heatmap
+        fmt: formatting of the values in the confusion matrix (default: 'd' for integer)
     """
     cm = confusion_matrix(true_labels, predictions, normalize=normalize)
 
