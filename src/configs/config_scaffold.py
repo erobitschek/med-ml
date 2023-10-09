@@ -46,7 +46,7 @@ class SplitRatios:
 class ModelConfig:
     name: str
     learning_rate: float
-    batch_size: int
+    batch_size: int = 32
     epochs: int = 500
     framework: ModelFramework = ModelFramework.SKLEARN
     dropout_rate: float = 0.5
@@ -65,6 +65,7 @@ class DatasetConfig:
     path: str
     target: str
     split_ratios: SplitRatios
+    state: DataState = DataState.RAW
     class_names: list = field(default_factory=lambda: ["0", "1"]) # assumes binary classification
     medcode_col: str = "CODE"
     id_col: str = "ID"
