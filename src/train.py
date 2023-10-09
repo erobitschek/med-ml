@@ -34,7 +34,6 @@ def train_simple_model(
     x_train: npt.ArrayLike,
     y_train: npt.ArrayLike,
     model: ModelType,
-    param_grid: Optional[Dict] = None,
     x_val: Optional[npt.ArrayLike] = None,
     y_val: Optional[npt.ArrayLike] = None,
 ) -> ModelType:
@@ -61,15 +60,7 @@ def train_simple_model(
         x_train = np.vstack((x_train, x_val)).squeeze()
         y_train = np.hstack((y_train, y_val))
 
-    if not param_grid:
-        model.fit(x_train, y_train)
-    else:
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
-        grid.fit(x_train, y_train)
-        model = grid.best_estimator_
-        print(grid.best_params_)
-        with open(f"{run_dir}/grid_search.yaml", "w") as f:
-            yaml.dump({f"best_params": grid.best_params_}, f)
+    model.fit(x_train, y_train)
 
     return model
 
@@ -186,13 +177,13 @@ def train_pytorch_model(
         yaml.dump({"train_loss": train_losses, "val_loss": val_losses}, f)
 
 
-def gridsearch_lgbm(
+def run_gridsearch(
     run_dir: str,
     config: RunConfig,
     train_set: DataSplit,
-    model: lgb.LGBMClassifier,
+    model: ModelType,
     logger: Logger,
-) -> lgb.Booster:
+) -> ModelType:
     """Run a grid search for a LightGBM model. The best parameters will be saved to a YAML file.
 
     Args:
@@ -217,7 +208,12 @@ def gridsearch_lgbm(
 
     logger.info("Performing a grid search for the best parameters...")
     grid = GridSearchCV(estimator=model, param_grid=config.model.param_grid, cv=5)
-    grid.fit(train_set.x, train_set.y)
+
+    try:
+        grid.fit(train_set.x, train_set.y)
+    except ValueError: # if the data is not in the right shape, try squeezing it
+        grid.fit(train_set.x.squeeze(), train_set.y)
+
     model = grid.best_estimator_
     logger.info(grid.best_params_)
     with open(f"{run_dir}/grid_search.yaml", "w") as f:

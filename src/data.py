@@ -58,9 +58,12 @@ class TorchDataset(torch.utils.data.Dataset):
         return x_final, self.y[idx]
 
 
-def load_data(path: str, filter_cols: list = None) -> pd.DataFrame:
+def load_data(path: str, filter_cols: list = None, header: bool=True) -> pd.DataFrame:
     """Loads data from a CSV file and optionally filters certain columns."""
-    data = pd.read_csv(path)
+    if header:
+        data = pd.read_csv(path)
+    else: 
+        data = pd.read_csv(path, header=None)
     return data[filter_cols] if filter_cols else data
 
 

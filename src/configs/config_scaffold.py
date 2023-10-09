@@ -47,6 +47,7 @@ class ModelConfig:
     name: str
     learning_rate: float
     batch_size: int = 32
+    batch_size: int = 32
     epochs: int = 500
     framework: ModelFramework = ModelFramework.SKLEARN
     dropout_rate: float = 0.5
@@ -56,7 +57,6 @@ class ModelConfig:
     grid_search: bool = False  # whether to perform the grid search
 
     # TODO: add post init that adds some parameters based on framework
-
 
 @dataclass
 class DatasetConfig:
@@ -71,18 +71,26 @@ class DatasetConfig:
     id_col: str = "ID"
     encoding: FeatureEncoding = FeatureEncoding.BINARY
     feature_threshold: int = (
-        0  # the minimum number of times a medical code occurs in the dataset
+        0  # the minimum frequency of a medical code in the dataset
     )
     shuffle: bool = True
     raw_dir: str = field(init=False)
     processed_dir: str = field(init=False)
     split_dir: str = field(init=False)
+    path_train: str = field(init=False)
+    path_val: str = field(init=False)
+    path_test: str = field(init=False)
 
     def __post_init__(self):
         # get directory paths for raw, processed and split data for the project
         self.raw_dir = f"../data/{self.project}/raw/"
         self.processed_dir = f"../data/{self.project}/processed/"
         self.split_dir = f"../data/{self.project}/split/"
+
+        if self.state == DataState.SPLIT:
+            self.path_train = f"{self.split_dir}{self.name}_train.csv"
+            self.path_val = f"{self.split_dir}{self.name}_val.csv"
+            self.path_test = f"{self.split_dir}{self.name}_test.csv"
 
 
 @dataclass
