@@ -12,8 +12,8 @@ This repository is dedicated to crafting robust code workflows for medical data 
 - [Setup](#setup)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
+- [Ongoing Work](#ongoing-work)
 - [Notes](#notes)
-   -[To Implement](#to-implement)
 
 ## Setup
 1. Clone the repository:
@@ -98,12 +98,12 @@ Analysis updates focus on broadening the model repertoire, enhancing preprocessi
 
 | **Completed** | **In Progress** | **Future** |
 |:-------------|:---------------|:----------|
-| Developed a modular code framework | Introducing the lightgbm model | Advanced preprocessing techniques for longitudinal data |
+| Developed a modular code framework | Introducing more complex RNNs (LSTM) | Advanced preprocessing techniques for longitudinal data |
 | Comprehensive pipeline from data ingestion to model evaluation | Chunk-wise data preprocessing for efficiency | Expansion of evaluation metrics |
-| Implemented logistic regression using PyTorch & sklearn | Integration of mini batch gradient descent | For PyTorch models: diving into cross validation, grid search, and regularization |
-| Rolled out grid search for sklearn models | Incorporation of confusion matrix visualization | Designing complex models (like RNNs) which would necessitate timeseries preprocessing |
-| Visualization tools for training & validation losses | ROC curve plotting tools | Delving into methods for model explainability & interpretability |
-| Detailed evaluation summaries for all models | | |
+| Implemented logistic regression using PyTorch & sklearn, lightgbm classifier | Integration of mini batch gradient descent | For PyTorch models: diving into cross validation, grid search, and regularization |
+| Rolled out grid search for sklearn, lightgbm models | ROC curve plotting tools | Designing complex models (like RNNs) which would necessitate timeseries preprocessing |
+| Visualization tools for training & validation losses | Delving into methods for model explainability & interpretability | Implementing  explainability & interpretability methods and visualizations |
+| Detailed evaluation summaries for all models, incorporation of confusion matrix visualization | | |
 
 
 ## Notes
