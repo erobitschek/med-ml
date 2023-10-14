@@ -1,7 +1,7 @@
 from configs.config_scaffold import *
 
 config = RunConfig(
-    run_name="test_logreg_sklearn",
+    run_name="test_logreg_sklear_v2",
     model=ModelConfig(
         name="logreg",
         learning_rate=0.001,
