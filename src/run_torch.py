@@ -81,7 +81,6 @@ def run_torch(
             device=device,
             start_epoch=0,
             num_epochs=config.model.epochs,
-            learning_rate=config.model.learning_rate,
             patience=config.model.patience,
             save_path=run_dir,
         )
