@@ -29,6 +29,7 @@ class DataSplit:
     ndropped: int = None
 
 
+
 class TorchDataset(torch.utils.data.Dataset):
     """Extension of torch Dataset class, which can be passed to a DataLoader."""
 
@@ -40,7 +41,7 @@ class TorchDataset(torch.utils.data.Dataset):
         transforms: List[Callable] = None,
     ):
         self.y = torch.tensor(y, dtype=torch.long)
-        self.x = torch.tensor(x, dtype=torch.float32)
+        self.x = torch.squeeze(torch.tensor(x, dtype=torch.float32))[:, None, :]
         self.dataset_name = dataset_name
         self.transforms = transforms
 
@@ -51,11 +52,10 @@ class TorchDataset(torch.utils.data.Dataset):
         x_idx = self.x[idx]
 
         if self.transforms:
-            x_final = self.transforms(x_idx)
-        else:
-            x_final = x_idx
+            for transform in self.transforms:
+                x_idx = transform(x_idx)
 
-        return x_final, self.y[idx]
+        return x_idx, self.y[idx]
 
 
 def load_data(path: str, filter_cols: list = None, header: bool=True) -> pd.DataFrame:
@@ -259,11 +259,12 @@ def get_dataloaders(
     test: DataSplit,
     batch_size: int = 32,
     val: Optional[DataSplit] = None,
+    transforms: Optional[List[Callable]] = None,
 ) -> tuple[torch.utils.data.DataLoader, ...]:
     """Creates torch dataloaders for training, testing, and optionally validation sets."""
 
-    ds_train = TorchDataset(x=train.x, y=train.y, dataset_name=dataset)
-    ds_test = TorchDataset(x=test.x, y=test.y, dataset_name=dataset)
+    ds_train = TorchDataset(x=train.x, y=train.y, dataset_name=dataset, transforms=transforms)
+    ds_test = TorchDataset(x=test.x, y=test.y, dataset_name=dataset, transforms=transforms)
 
     train_loader = torch.utils.data.DataLoader(
         ds_train, batch_size=batch_size, shuffle=True
@@ -273,7 +274,7 @@ def get_dataloaders(
     val_loader = None
 
     if val is not None:
-        ds_val = TorchDataset(x=val.x, y=val.y, dataset_name=dataset)
+        ds_val = TorchDataset(x=val.x, y=val.y, dataset_name=dataset, transforms=transforms)
         val_loader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size)
 
     return train_loader, test_loader, val_loader
