@@ -280,14 +280,15 @@ def get_dataloaders(
     return train_loader, test_loader, val_loader
 
 
-def prep_data_for_modelling(
+def prep_synth_med_data_for_modelling(
     config: RunConfig,
     run_dir: str,
     data_state: str,
     logger: logging.Logger,
     to_array: bool = True,
 ) -> tuple[DataSplit, DataSplit, Optional[DataSplit]]:
-    """Prepares data for modeling using the given configuration.
+    """Prepares data for modeling using the given configuration. 
+    Currently tailored for the synth_med_data dataset.
 
     Args:
         config: Configuration object for data preparation.
@@ -299,6 +300,9 @@ def prep_data_for_modelling(
     Returns:
         Training, testing, and optionally validation data splits.
     """
+    if config.dataset.project != "synth_med_data":
+        raise ValueError(f"This function is only for the 'synth_med_data' project dataset. {config.dataset.project} dataset not supported.")
+
     logger.info(f"Loading {data_state} data")
     if not os.path.exists(config.dataset.path):
         raise FileNotFoundError(f"File {config.dataset.path} not found.")
@@ -344,4 +348,37 @@ def prep_data_for_modelling(
             f"Dataset shapes (train, test, val): {train_set.x.shape}, {test_set.x.shape}, {val_set.x.shape}"
         )
 
+    return train_set, test_set, val_set
+
+
+def prep_data_for_modelling(
+    config: RunConfig,
+    run_dir: str,
+    data_state: str,
+    logger: logging.Logger,
+    to_array: bool = True,
+) -> tuple[DataSplit, DataSplit, Optional[DataSplit]]:
+    """Prepares data for modeling using the given configuration.
+
+    Args:
+        config: Configuration object for data preparation.
+        run_dir: Directory to save metadata.
+        data_state: Indicates if raw or processed data is to be loaded.
+        logger: Logger object.
+        if_array: Whether to convert df data to arrays and write metadata.
+
+    Returns:
+        Training, testing, and optionally validation data splits.
+    """
+    if config.dataset.project == "ptbdb":
+        from custom_data import load_ptbdb # just for this dataset
+        train_set, test_set, val_set = load_ptbdb(config=config, logger=logger, val_frac=0.15)
+    elif config.dataset.project == "synth_med_data":
+        train_set, test_set, val_set = prep_synth_med_data_for_modelling(
+            config=config,
+            run_dir=run_dir,
+            data_state=data_state,
+            logger=logger,
+            to_array=to_array,
+        )
     return train_set, test_set, val_set
