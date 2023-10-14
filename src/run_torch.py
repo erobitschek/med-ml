@@ -9,10 +9,9 @@ from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from data import get_dataloaders
 from eval import run_eval
-from models import init_model, TorchLogisticRegression, SimpleCNN
 from predict import predict_from_torch
 from train import train_pytorch_model
-from utils import load_model, setup_logger, setup_training_dir
+from utils import init_model, load_model, setup_training_dir
 from vis import plot_loss
 
 
@@ -67,7 +66,7 @@ def run_torch(
     )
 
     if train_mode == "train":  # TODO: implement 'resume' option
-        model = init_model(model=config.model.model_type, config=config, train_loader=train_loader)
+        model, optimizer, criterion = init_model(config=config, train_loader=train_loader)
         logger.info("Training pytorch implementation of model...")
         logger.info(f"Model type is: {model}")
 
@@ -75,9 +74,10 @@ def run_torch(
             train_dir=train_dir,
             logger=logger,
             model=model,
+            optimizer=optimizer,
+            criterion=criterion,
             train_loader=train_loader,
             val_loader=val_loader,
-            optimizer="adam",
             device=device,
             start_epoch=0,
             num_epochs=config.model.epochs,
@@ -92,7 +92,7 @@ def run_torch(
         plot_loss(train_losses, val_losses, out_dir=train_dir)
 
     elif train_mode == "load":
-        model = init_model(model=config.model.model_type, config=config, train_loader=train_loader)
+        model, optimizer, criterion = init_model(config=config, train_loader=train_loader)
         model = load_model(run_dir, model=model)
         logger.info(f"Model weights loaded from previous training")
 

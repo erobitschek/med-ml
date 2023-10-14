@@ -1,6 +1,6 @@
 import os
 from logging import Logger
-from typing import Dict, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -66,14 +66,14 @@ def train_simple_model(
 
 
 def train_pytorch_model(
-    model,
-    train_loader,
-    val_loader,
+    model: Callable,
+    optimizer: optim.Optimizer,
+    criterion: nn.Module, 
+    train_loader: torch.utils.data.DataLoader,
+    val_loader: torch.utils.data.DataLoader,
     train_dir: str,
     logger: Logger,
     device="cpu",
-    criterion=nn.BCELoss(),
-    optimizer="adam",
     num_epochs=100,
     learning_rate=float,
     start_epoch: int = 0,
@@ -86,13 +86,13 @@ def train_pytorch_model(
 
     Args:
         model: PyTorch model class instance to be trained.
+        criterion: Loss function to use.
+        optimizer: Optimizer choice.
         train_loader: DataLoader object for training data.
         val_loader: DataLoader object for validation data.
         train_dir: Directory to save training artifacts.
         logger: Logger for capturing training progress.
         device: Device on which the model should be trained.
-        criterion: Loss function to use.
-        optimizer: Optimizer choice ("adam" or "sgd").
         num_epochs: Total number of epochs for training.
         learning_rate: Learning rate for the optimizer.
         start_epoch: Epoch to begin training. Useful for resuming training.
@@ -102,14 +102,6 @@ def train_pytorch_model(
     """
     if save_path is None:
         save_path = train_dir
-    if optimizer == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-    elif optimizer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    else:
-        raise ValueError(
-            f"Optimizer {optimizer} not supported. Please choose between 'adam' and 'sgd'."
-        )
 
     train_losses = []
     val_losses = []
