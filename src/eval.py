@@ -3,15 +3,9 @@ import logging
 from typing import Dict
 
 import numpy.typing as npt
-from sklearn.metrics import (
-    balanced_accuracy_score,
-    classification_report,
-    f1_score,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-    roc_curve,
-)
+from sklearn.metrics import (balanced_accuracy_score, classification_report,
+                             f1_score, precision_score, recall_score,
+                             roc_auc_score, roc_curve)
 
 from configs.config_scaffold import RunConfig
 from predict import save_predictions_to_file

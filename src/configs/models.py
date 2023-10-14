@@ -1,11 +1,11 @@
 from enum import Enum
 from typing import Callable, List, Optional, Tuple
 
-from lightgbm import LGBMClassifier
 import numpy.typing as npt
-from sklearn.linear_model import LogisticRegression as skLogisticRegression
 import torch as torch
 import torch.nn as nn
+from lightgbm import LGBMClassifier
+from sklearn.linear_model import LogisticRegression as skLogisticRegression
 
 
 class TorchLogisticRegression(nn.Module):

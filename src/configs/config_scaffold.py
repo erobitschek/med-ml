@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field, InitVar
+from dataclasses import InitVar, dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Type
 
@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from configs.models import ModelType
+
 
 class ModelFramework(Enum):
     SKLEARN = auto()  # good for standard simple models

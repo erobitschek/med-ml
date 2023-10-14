@@ -1,4 +1,5 @@
 import os
+import warnings
 from logging import Logger
 from typing import Callable, Dict, Optional, Union
 
@@ -9,22 +10,14 @@ import torch as torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-import warnings
-
 from joblib import dump
-from sklearn.metrics import (
-    accuracy_score,
-    average_precision_score,
-    balanced_accuracy_score,
-    f1_score,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
 from sklearn.linear_model import LogisticRegression as skLogisticRegression
+from sklearn.metrics import (accuracy_score, average_precision_score,
+                             balanced_accuracy_score, f1_score,
+                             precision_score, recall_score, roc_auc_score)
 from sklearn.model_selection import GridSearchCV
-from tqdm import tqdm
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from tqdm import tqdm
 
 from configs.config_scaffold import RunConfig
 from data import DataSplit
