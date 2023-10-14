@@ -1,11 +1,12 @@
-from typing import Callable, List, Optional
+from enum import Enum
+from typing import Callable, List, Optional, Tuple
 
+from lightgbm import LGBMClassifier
 import numpy.typing as npt
+from sklearn.linear_model import LogisticRegression as skLogisticRegression
 import torch as torch
 import torch.nn as nn
 
-from configs.config_scaffold import RunConfig
-from data import DataSplit
 
 class TorchLogisticRegression(nn.Module):
     """A simple logistic regression implementation using PyTorch.
@@ -50,7 +51,7 @@ class SimpleCNN(nn.Module):
     """Implements a simple CNN model using PyTorch.
 
     Attributes:
-        input_shape: Shape of the input tensor (batch, input_dims, sequence length).
+        input_dim: Shape of the input tensor (batch, input_dims, sequence length).
         n_class: Number of classes.
         filter_sizes: Filter depth for each Conv1d layer.
         kernel_sizes: Kernel size for each Conv1d layer.
@@ -66,7 +67,7 @@ class SimpleCNN(nn.Module):
 
     def __init__(
         self,
-        input_shape: npt.ArrayLike,
+        input_dim: npt.ArrayLike,
         n_class: int,
         filter_sizes: List[int] = [16, 32, 32, 64],
         kernel_sizes: List[int] = [5, 3, 3, 3],
@@ -76,7 +77,7 @@ class SimpleCNN(nn.Module):
         """
         Parameters
         ----------
-        input_shape: shape of input (batch, input_dims, sequence length)
+        input_dim: shape of input (batch, input_dims, sequence length)
         n_class: number of classes to be categorized
         filter_sizes: filter depth for Conv1d layers
         kernel_sizes: kernel sizes for Conv1d layers
@@ -86,7 +87,7 @@ class SimpleCNN(nn.Module):
 
         super(SimpleCNN, self).__init__()
 
-        self.input_shape = input_shape
+        self.input_dim = input_dim
         self.n_class = n_class
 
         # Define network architecture
@@ -99,7 +100,7 @@ class SimpleCNN(nn.Module):
         conv1d_layers = []
         for in_ch, out_ch, kernel_size in zip(
             [
-                self.input_shape[1],
+                self.input_dim[1],
             ]
             + self.filter_sizes[:-1],
             self.filter_sizes,
@@ -175,7 +176,7 @@ class SimpleCNN(nn.Module):
     def attributes(self):
         """Returns the attributes of the model as a dictionary."""
         return {
-            "input_shape": self.input_shape,
+            "input_dim": self.input_dim,
             "n_classes": self.n_class,
             "filter_sizes": self.filter_sizes,
             "kernel_sizes": self.kernel_sizes,
@@ -184,11 +185,11 @@ class SimpleCNN(nn.Module):
         }
 
 
-class simple_RNN(nn.Module):
+class SimpleRNN(nn.Module):
     """Implements a basic RNN model using PyTorch.
 
     Attributes:
-        input_shape: Shape of the input tensor.
+        input_dim: Shape of the input tensor.
         num_layers: Number of RNN layers.
         hidden_size: Size of the RNN hidden state.
         sequence_length: Length of the sequence.
@@ -200,21 +201,21 @@ class simple_RNN(nn.Module):
 
     def __init__(
         self,
-        input_shape: npt.ArrayLike,
+        input_dim: npt.ArrayLike,
         n_classes: int,
         sequence_length: int,
         num_layers: int=3,
         hidden_size: int=64,
     ):
-        super(simple_RNN, self).__init__()
+        super(SimpleRNN, self).__init__()
 
-        self.input_shape = input_shape
+        self.input_dim = input_dim
         self.num_layers = num_layers
         self.hidden_size = hidden_size
         self.sequence_length = sequence_length
         self.n_classes = n_classes
         self.rnn = torch.nn.RNN(
-            input_size=self.input_shape,
+            input_size=self.input_dim,
             hidden_size=self.hidden_size,
             num_layers=self.num_layers,
             bidirectional=False,
@@ -254,7 +255,7 @@ class simple_RNN(nn.Module):
     def attributes(self):
         """Returns the attributes of the model as a dictionary."""
         return {
-            "input_shape": self.input_shape,
+            "input_dim": self.input_dim,
             "num_layers": self.num_layers,
             "n_classes": self.n_classes,
             "sequence_length": self.sequence_length,
@@ -262,31 +263,22 @@ class simple_RNN(nn.Module):
         }
 
 
-def init_model(
-    model: Callable,
-    config: RunConfig,
-    train_loader: torch.utils.data.dataloader.DataLoader,
-    n_classes: int = 2,
-) -> Callable:
-    """Initialize and return a machine learning model specified by the 'model' argument in the config.
+class ModelType(Enum):
+    LOGREG_SKLEARN = skLogisticRegression
+    LOGREG_TORCH = TorchLogisticRegression
+    LGBM_CLASSIFIER = LGBMClassifier
+    SIMPLE_CNN = SimpleCNN
+    SIMPLE_RNN = SimpleRNN
+    # Add other models here as needed
 
-    Args:
-        model: Uninitialized model.
-        config: Configuration settings for the run.
-        train_loader: Training data for estimating the input dimensionality.
-        n_classes: Number of target classes.
+    def __call__(self, *args, **kwargs) -> Callable:
+        # This allows the enum instance itself to be called as a constructor, forwarding arguments to the actual constructor
+        return self.value(*args, **kwargs)
 
-    Examples:
-        >>> train_loader = DataLoader(MyDataset(), batch_size=4, shuffle=True)
-        >>> model = init_model("pytorch_logreg", my_run_config, train_loader, n_classes=3)
-        Model type is: <TorchLogisticRegression object>
-    """
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    if model == "pytorch_logreg":
-        input_dim = train_loader.dataset.x.shape[1]
-        model = TorchLogisticRegression(input_dim=input_dim).to(device)
-    elif model == "simple_cnn":
-        input_dim = train_loader.dataset.x.shape
-        model = SimpleCNN(input_shape=input_dim, n_class=n_classes).to(device)
-    print(f"Model type is: {model}")
-    return model
+    @staticmethod
+    def from_name(model_name: str):
+        for model in ModelType:
+            if model.name == model_name.upper():
+                return model
+        raise ValueError(f"Unsupported model: {model_name}")
+    
