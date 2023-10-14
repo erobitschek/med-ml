@@ -124,7 +124,7 @@ def setup_training_dir(
     if train_mode == "train":
         path = setup_output_dir(dataset_name, model_name, run_name, training=True)
 
-    elif train_mode.isin(["resume", "load"]):
+    elif train_mode in ["resume", "load"]:
         path = get_path(dataset_name, model_name, run_name, training=True)
         if not os.path.exists(path):
             raise FileNotFoundError("Training directory {path} not found")
