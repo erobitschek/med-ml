@@ -9,7 +9,7 @@ from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from data import get_dataloaders
 from eval import run_eval
-from models import TorchLogisticRegression
+from models import init_model, TorchLogisticRegression, SimpleCNN
 from predict import predict_from_torch
 from train import train_pytorch_model
 from utils import load_model, setup_logger, setup_training_dir
@@ -25,6 +25,7 @@ def run_torch(
     logger: Logger,
     train_mode: str,
     model_eval: bool = True,
+    device: str = "cuda" if torch.cuda.is_available() else "cpu",
 ):
     """Trains, loads, and evaluates a model using PyTorch.
 
@@ -48,7 +49,6 @@ def run_torch(
         raise ValueError(
             "A validation set is required for the PyTorch model implementation. Adjust split ratios."
         )
-    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     train_loader, test_loader, val_loader = get_dataloaders(
         dataset=config.dataset.name,
@@ -56,6 +56,7 @@ def run_torch(
         test=test_set,
         val=val_set,
         batch_size=config.model.batch_size,
+        transforms=config.model.data_transforms
     )
 
     train_dir = setup_training_dir(
@@ -65,12 +66,10 @@ def run_torch(
         train_mode=train_mode,
     )
 
-    # TODO: move model specification outside to be more flexible to calling different model types
     if train_mode == "train":  # TODO: implement 'resume' option
-        input_dim = train_set.x.shape[1]
-        model = TorchLogisticRegression(input_dim=input_dim).to(device)
+        model = init_model(model=config.model.model_type, config=config, train_loader=train_loader)
         logger.info("Training pytorch implementation of model...")
-        logger.info(f"Model type is: {type(model)}")
+        logger.info(f"Model type is: {model}")
 
         train_pytorch_model(
             train_dir=train_dir,
@@ -93,8 +92,7 @@ def run_torch(
         plot_loss(train_losses, val_losses, out_dir=train_dir)
 
     elif train_mode == "load":
-        input_dim = train_set.x.shape[1]
-        model = TorchLogisticRegression(input_dim=input_dim).to(device)
+        model = init_model(model=config.model.model_type, config=config, train_loader=train_loader)
         model = load_model(run_dir, model=model)
         logger.info(f"Model weights loaded from previous training")
 
