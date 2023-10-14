@@ -6,14 +6,14 @@ import random
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
 import torch
 import torch.nn as nn
 
-from configs.config_scaffold import TrainMode
+from configs.config_scaffold import ModelType, RunConfig
 
 
 def load_config(path):
@@ -193,3 +193,42 @@ def load_model(run_folder: str, model: Optional[nn.Module] = None) -> nn.Module:
         if not os.path.exists(f"{run_folder}/model.pth"):
             raise FileNotFoundError("Model file not found")
         return torch.load(f"{run_folder}/model.pth")
+
+
+def init_model(
+    config: RunConfig,
+    train_loader: torch.utils.data.dataloader.DataLoader,
+    n_classes: int = 2,
+) -> Tuple[Callable, torch.optim.Optimizer, torch.nn.modules.loss._Loss]:
+    """Initialize and return a machine learning model, optimizer, and loss criterion based on the configuration. 
+    Note: Ensure all model constructors can accept the same or similar arguments
+
+    Args:
+        config: Configuration settings for the run, containing model details, optimizer type, loss criterion,
+                learning rate, etc.
+        train_loader: DataLoader for the training dataset. Used to infer input dimensions for the model.
+        n_classes: Number of target classes in the dataset.
+
+    Returns:
+        Tuple containing the initialized model, optimizer, and loss criterion.
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_class = config.model.model_type
+
+    if model_class in [ModelType.LOGREG_TORCH, ModelType.SIMPLE_CNN, ModelType.SIMPLE_RNN]:
+        input_dim = train_loader.dataset.x.shape[1] if model_class == ModelType.LOGREG_TORCH else train_loader.dataset.x.shape
+        print(input_dim)
+        model = model_class(input_dim=input_dim, n_class=n_classes).to(device)
+    else:
+        raise ValueError(f"Unsupported model: {model_class}")
+
+    optimizer_class = config.model.actual_optimizer
+    optimizer = optimizer_class(model.parameters(), lr=config.model.learning_rate)
+
+    criterion = config.model.actual_loss_criterion
+
+    print(f"Model type is: {model.__class__.__name__}")
+    print(f"Optimizer type is: {optimizer.__class__.__name__}")
+    print(f"Loss criterion is: {criterion().__class__.__name__}")
+    return model, optimizer, criterion
+

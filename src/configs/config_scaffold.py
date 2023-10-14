@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
-from typing import Optional, Type
+from typing import Callable, Optional, Type
 
 import torch.nn as nn
 import torch.optim as optim
 
+from configs.models import ModelType
 
 class ModelFramework(Enum):
     SKLEARN = auto()  # good for standard simple models
@@ -73,7 +74,7 @@ class ModelConfig:
     learning_rate: float
     batch_size: int = 32
     epochs: int = 500
-    model_type: str = "logreg"
+    model_type: ModelType = ModelType.LOGREG_SKLEARN
     framework: ModelFramework = ModelFramework.SKLEARN
     loss_criterion: InitVar[Optional[str]] = "CROSS_ENTROPY"  # default value for pytorch models
     optimizer: InitVar[Optional[str]] = "ADAM"  # default value for pytorch models
