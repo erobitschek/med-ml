@@ -1,7 +1,9 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
+from typing import Optional, Type
 
 import torch.nn as nn
+import torch.optim as optim
 
 
 class ModelFramework(Enum):
@@ -11,9 +13,15 @@ class ModelFramework(Enum):
 
 
 class PyTorchLoss(Enum):
-    BINARY_CROSS_ENTROPY = nn.BCELoss
-    CROSS_ENTROPY = nn.CrossEntropyLoss
-    MSE = nn.MSELoss
+    BINARY_CROSS_ENTROPY = nn.BCELoss # commonly used for binary classification
+    CROSS_ENTROPY = nn.CrossEntropyLoss # commonly used for multi-class classification
+    MSE = nn.MSELoss # commonly used for regression
+
+
+class PyTorchOptim(Enum):
+    ADAM = optim.Adam 
+    SGD = optim.SGD 
+    RMS_PROP = optim.RMSprop 
 
 
 class FeatureEncoding(Enum):
@@ -67,6 +75,10 @@ class ModelConfig:
     epochs: int = 500
     model_type: str = "logreg"
     framework: ModelFramework = ModelFramework.SKLEARN
+    loss_criterion: InitVar[Optional[str]] = "CROSS_ENTROPY"  # default value for pytorch models
+    optimizer: InitVar[Optional[str]] = "ADAM"  # default value for pytorch models
+    actual_loss_criterion: Optional[Type[nn.Module]] = field(default=None, init=False)
+    actual_optimizer: Optional[Type[optim.Optimizer]] = field(default=None, init=False)
     data_transforms: list = field(default_factory=lambda: None) # list of transforms to apply to data
     dropout_rate: float = 0.5
     patience: int = None
@@ -74,7 +86,19 @@ class ModelConfig:
     param_grid: dict = None  # for grid search to find optimal model parameters
     grid_search: bool = False  # whether to perform the grid search
 
-    # TODO: add post init that adds some parameters based on framework
+    def __post_init__(self, loss_criterion: str, optimizer: str):
+        if self.framework == ModelFramework.PYTORCH:
+            self.set_pytorch_components(loss_criterion, optimizer)
+        else:
+            # TODO: Implement logic for other frameworks if needed
+            pass
+
+    def set_pytorch_components(self, loss_criterion: str, optimizer: str):
+        loss_class = PyTorchLoss[loss_criterion].value if loss_criterion else PyTorchLoss.CROSS_ENTROPY.value
+        optimizer_class = PyTorchOptim[optimizer].value if optimizer else PyTorchOptim.ADAM.value
+
+        object.__setattr__(self, 'actual_loss_criterion', loss_class) # this logic is needed to avoid dataclass immutability
+        object.__setattr__(self, 'actual_optimizer', optimizer_class)
 
 
 @dataclass
