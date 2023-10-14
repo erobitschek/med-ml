@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression as skLogisticRegression
 from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from eval import run_eval
-from train import gridsearch_lgbm, train_lgbm, train_simple_model
+from train import run_gridsearch, train_lgbm, train_simple_model
 
 
 def run_simple(
@@ -124,7 +124,7 @@ def run_lgbm(
     model_path = os.path.join(run_dir, "model.pkl")
 
     if config.model.grid_search:
-        model = gridsearch_lgbm(
+        model = run_gridsearch(
             run_dir=run_dir,
             config=config,
             train_set=train_set,
