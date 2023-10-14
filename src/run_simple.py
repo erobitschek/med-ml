@@ -104,7 +104,7 @@ def run_lgbm(
     model_eval: bool = True,
 ) -> None:
     """Trains, loads, or resumes an LGBM model based on the specified train_mode. Additionally,
-    it evaluates the model on the test set if model_eval is True. If the grid search parameter 
+    it evaluates the model on the test set if model_eval is True. If the grid search parameter
     is True in the config, a grid search is run instead of training.
 
     Args:
@@ -142,7 +142,7 @@ def run_lgbm(
             val_set=val_set,
             model=lgb.LGBMClassifier(**config.model.params),
             logger=logger,
-            model_path=model_path
+            model_path=model_path,
         )
 
     elif train_mode == TrainMode.LOAD.name.lower():

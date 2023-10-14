@@ -200,7 +200,7 @@ def init_model(
     train_loader: torch.utils.data.dataloader.DataLoader,
     n_classes: int = 2,
 ) -> Tuple[Callable, torch.optim.Optimizer, torch.nn.modules.loss._Loss]:
-    """Initialize and return a machine learning model, optimizer, and loss criterion based on the configuration. 
+    """Initialize and return a machine learning model, optimizer, and loss criterion based on the configuration.
     Note: Ensure all model constructors can accept the same or similar arguments
 
     Args:
@@ -215,8 +215,16 @@ def init_model(
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model_class = config.model.model_type
 
-    if model_class in [ModelType.LOGREG_TORCH, ModelType.SIMPLE_CNN, ModelType.SIMPLE_RNN]:
-        input_dim = train_loader.dataset.x.shape[1] if model_class == ModelType.LOGREG_TORCH else train_loader.dataset.x.shape
+    if model_class in [
+        ModelType.LOGREG_TORCH,
+        ModelType.SIMPLE_CNN,
+        ModelType.SIMPLE_RNN,
+    ]:
+        input_dim = (
+            train_loader.dataset.x.shape[1]
+            if model_class == ModelType.LOGREG_TORCH
+            else train_loader.dataset.x.shape
+        )
         print(input_dim)
         model = model_class(input_dim=input_dim, n_class=n_classes).to(device)
     else:
@@ -231,4 +239,3 @@ def init_model(
     print(f"Optimizer type is: {optimizer.__class__.__name__}")
     print(f"Loss criterion is: {criterion().__class__.__name__}")
     return model, optimizer, criterion
-

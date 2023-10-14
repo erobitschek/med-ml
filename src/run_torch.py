@@ -55,7 +55,7 @@ def run_torch(
         test=test_set,
         val=val_set,
         batch_size=config.model.batch_size,
-        transforms=config.model.data_transforms
+        transforms=config.model.data_transforms,
     )
 
     train_dir = setup_training_dir(
@@ -66,7 +66,9 @@ def run_torch(
     )
 
     if train_mode == "train":  # TODO: implement 'resume' option
-        model, optimizer, criterion = init_model(config=config, train_loader=train_loader)
+        model, optimizer, criterion = init_model(
+            config=config, train_loader=train_loader
+        )
         logger.info("Training pytorch implementation of model...")
         logger.info(f"Model type is: {model}")
 
@@ -90,7 +92,9 @@ def run_torch(
         plot_loss(train_losses, val_losses, out_dir=train_dir)
 
     elif train_mode == "load":
-        model, optimizer, criterion = init_model(config=config, train_loader=train_loader)
+        model, optimizer, criterion = init_model(
+            config=config, train_loader=train_loader
+        )
         model = load_model(run_dir, model=model)
         logger.info(f"Model weights loaded from previous training")
 

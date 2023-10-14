@@ -15,15 +15,15 @@ class ModelFramework(Enum):
 
 
 class PyTorchLoss(Enum):
-    BINARY_CROSS_ENTROPY = nn.BCELoss # commonly used for binary classification
-    CROSS_ENTROPY = nn.CrossEntropyLoss # commonly used for multi-class classification
-    MSE = nn.MSELoss # commonly used for regression
+    BINARY_CROSS_ENTROPY = nn.BCELoss  # commonly used for binary classification
+    CROSS_ENTROPY = nn.CrossEntropyLoss  # commonly used for multi-class classification
+    MSE = nn.MSELoss  # commonly used for regression
 
 
 class PyTorchOptim(Enum):
-    ADAM = optim.Adam 
-    SGD = optim.SGD 
-    RMS_PROP = optim.RMSprop 
+    ADAM = optim.Adam
+    SGD = optim.SGD
+    RMS_PROP = optim.RMSprop
 
 
 class FeatureEncoding(Enum):
@@ -45,6 +45,7 @@ class DataState(Enum):
 
 class PermuteTransform:
     """Transform to permute the dimensions of a tensor. For use with pytorch models."""
+
     def __init__(self, *dims):
         self.dims = dims
 
@@ -77,11 +78,15 @@ class ModelConfig:
     epochs: int = 500
     model_type: ModelType = ModelType.LOGREG_SKLEARN
     framework: ModelFramework = ModelFramework.SKLEARN
-    loss_criterion: InitVar[Optional[str]] = "CROSS_ENTROPY"  # default value for pytorch models
+    loss_criterion: InitVar[
+        Optional[str]
+    ] = "CROSS_ENTROPY"  # default value for pytorch models
     optimizer: InitVar[Optional[str]] = "ADAM"  # default value for pytorch models
     actual_loss_criterion: Optional[Type[nn.Module]] = field(default=None, init=False)
     actual_optimizer: Optional[Type[optim.Optimizer]] = field(default=None, init=False)
-    data_transforms: list = field(default_factory=lambda: None) # list of transforms to apply to data
+    data_transforms: list = field(
+        default_factory=lambda: None
+    )  # list of transforms to apply to data
     dropout_rate: float = 0.5
     patience: int = None
     params: dict = None  # param dict for lgbm model
@@ -96,11 +101,19 @@ class ModelConfig:
             pass
 
     def set_pytorch_components(self, loss_criterion: str, optimizer: str):
-        loss_class = PyTorchLoss[loss_criterion].value if loss_criterion else PyTorchLoss.CROSS_ENTROPY.value
-        optimizer_class = PyTorchOptim[optimizer].value if optimizer else PyTorchOptim.ADAM.value
+        loss_class = (
+            PyTorchLoss[loss_criterion].value
+            if loss_criterion
+            else PyTorchLoss.CROSS_ENTROPY.value
+        )
+        optimizer_class = (
+            PyTorchOptim[optimizer].value if optimizer else PyTorchOptim.ADAM.value
+        )
 
-        object.__setattr__(self, 'actual_loss_criterion', loss_class) # this logic is needed to avoid dataclass immutability
-        object.__setattr__(self, 'actual_optimizer', optimizer_class)
+        object.__setattr__(
+            self, "actual_loss_criterion", loss_class
+        )  # this logic is needed to avoid dataclass immutability
+        object.__setattr__(self, "actual_optimizer", optimizer_class)
 
 
 @dataclass
@@ -111,13 +124,13 @@ class DatasetConfig:
     target: str
     split_ratios: SplitRatios
     state: DataState = DataState.RAW
-    class_names: list = field(default_factory=lambda: ["0", "1"]) # assumes binary classification
+    class_names: list = field(
+        default_factory=lambda: ["0", "1"]
+    )  # assumes binary classification
     medcode_col: str = "CODE"
     id_col: str = "ID"
     encoding: FeatureEncoding = FeatureEncoding.BINARY
-    feature_threshold: int = (
-        0  # the minimum frequency of a medical code in the dataset
-    )
+    feature_threshold: int = 0  # the minimum frequency of a medical code in the dataset
     shuffle: bool = True
     raw_dir: str = field(init=False)
     processed_dir: str = field(init=False)

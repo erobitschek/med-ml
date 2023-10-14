@@ -1,15 +1,19 @@
 import argparse
 import sys
 
-from configs.config_scaffold import (DataState, ModelFramework, RunConfig,
-                                     TrainMode)
-from data import (df_to_array, get_x_y, load_data, prep_data_for_modelling,
-                  save_vars_to_pickle, split_data_train_test,
-                  split_data_train_test_val)
+from configs.config_scaffold import DataState, ModelFramework, RunConfig, TrainMode
+from data import (
+    df_to_array,
+    get_x_y,
+    load_data,
+    prep_data_for_modelling,
+    save_vars_to_pickle,
+    split_data_train_test,
+    split_data_train_test_val,
+)
 from run_simple import run_lgbm, run_simple
 from run_torch import run_torch
-from utils import (get_path, load_config, set_seed, setup_logger,
-                   setup_output_dir)
+from utils import get_path, load_config, set_seed, setup_logger, setup_output_dir
 
 
 def parse_args():

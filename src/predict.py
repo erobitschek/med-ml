@@ -40,15 +40,22 @@ def predict_from_torch(
             outputs = model(batch_features)
 
             if return_probabilities:
-                probabilities = torch.softmax(outputs, dim=1).cpu().numpy()  # Use softmax for multi-class probabilities
+                probabilities = (
+                    torch.softmax(outputs, dim=1).cpu().numpy()
+                )  # Use softmax for multi-class probabilities
                 all_probabilities.extend(probabilities)
 
             else:
-                _, predictions = torch.max(outputs, 1)  # Get the indices of max probabilities
+                _, predictions = torch.max(
+                    outputs, 1
+                )  # Get the indices of max probabilities
                 all_predictions.extend(predictions.cpu().numpy())
 
-    return np.array(all_probabilities) if return_probabilities else np.array(all_predictions)
-
+    return (
+        np.array(all_probabilities)
+        if return_probabilities
+        else np.array(all_predictions)
+    )
 
 
 def save_predictions_to_file(

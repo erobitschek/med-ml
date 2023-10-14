@@ -204,8 +204,8 @@ class SimpleRNN(nn.Module):
         input_dim: npt.ArrayLike,
         n_classes: int,
         sequence_length: int,
-        num_layers: int=3,
-        hidden_size: int=64,
+        num_layers: int = 3,
+        hidden_size: int = 64,
     ):
         super(SimpleRNN, self).__init__()
 
@@ -281,4 +281,3 @@ class ModelType(Enum):
             if model.name == model_name.upper():
                 return model
         raise ValueError(f"Unsupported model: {model_name}")
-    

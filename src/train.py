@@ -12,9 +12,15 @@ import torch.optim as optim
 import yaml
 from joblib import dump
 from sklearn.linear_model import LogisticRegression as skLogisticRegression
-from sklearn.metrics import (accuracy_score, average_precision_score,
-                             balanced_accuracy_score, f1_score,
-                             precision_score, recall_score, roc_auc_score)
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import GridSearchCV
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
@@ -24,6 +30,7 @@ from data import DataSplit
 from utils import save_model
 
 ModelType = Union[skLogisticRegression, lgb.LGBMClassifier]
+
 
 def train_simple_model(
     run_dir: str,
@@ -64,7 +71,7 @@ def train_simple_model(
 def train_pytorch_model(
     model: Callable,
     optimizer: optim.Optimizer,
-    criterion: nn.Module, 
+    criterion: nn.Module,
     train_loader: torch.utils.data.DataLoader,
     val_loader: torch.utils.data.DataLoader,
     train_dir: str,
@@ -111,7 +118,7 @@ def train_pytorch_model(
         for batch_features, batch_labels in train_loader:
             optimizer.zero_grad()
             outputs = model(batch_features)
-            #loss = criterion(outputs.squeeze(), batch_labels.float()) # keep until test impact on binary classification task (new PR)
+            # loss = criterion(outputs.squeeze(), batch_labels.float()) # keep until test impact on binary classification task (new PR)
             loss = criterion(outputs, batch_labels)
             running_loss += loss.item()
             loss.backward()
@@ -125,7 +132,7 @@ def train_pytorch_model(
         with torch.no_grad():
             for batch_features, batch_labels in val_loader:
                 outputs = model(batch_features)
-                #loss = criterion(outputs.squeeze(), batch_labels.float())
+                # loss = criterion(outputs.squeeze(), batch_labels.float())
                 loss = criterion(outputs, batch_labels)
                 running_val_loss += loss.item()
 
@@ -195,7 +202,7 @@ def run_gridsearch(
 
     try:
         grid.fit(train_set.x, train_set.y)
-    except ValueError: # if the data is not in the right shape, try squeezing it
+    except ValueError:  # if the data is not in the right shape, try squeezing it
         grid.fit(train_set.x.squeeze(), train_set.y)
 
     model = grid.best_estimator_
@@ -258,4 +265,3 @@ def train_lgbm(
     logger.info(f"Model saved to .pkl file")
 
     return model
-
