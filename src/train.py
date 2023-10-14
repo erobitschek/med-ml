@@ -9,6 +9,8 @@ import torch as torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+import warnings
+
 from joblib import dump
 from sklearn.metrics import (
     accuracy_score,
@@ -22,6 +24,7 @@ from sklearn.metrics import (
 from sklearn.linear_model import LogisticRegression as skLogisticRegression
 from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from configs.config_scaffold import RunConfig
 from data import DataSplit
@@ -73,9 +76,7 @@ def train_pytorch_model(
     val_loader: torch.utils.data.DataLoader,
     train_dir: str,
     logger: Logger,
-    device="cpu",
     num_epochs=100,
-    learning_rate=float,
     start_epoch: int = 0,
     patience: int = 20,
     checkpoint_freq: int = 10,
@@ -94,7 +95,6 @@ def train_pytorch_model(
         logger: Logger for capturing training progress.
         device: Device on which the model should be trained.
         num_epochs: Total number of epochs for training.
-        learning_rate: Learning rate for the optimizer.
         start_epoch: Epoch to begin training. Useful for resuming training.
         patience: Patience parameter for early stopping.
         checkpoint_freq: Frequency for saving model checkpoints.
@@ -102,6 +102,9 @@ def train_pytorch_model(
     """
     if save_path is None:
         save_path = train_dir
+
+    with open(os.path.join(train_dir, "model_attr.yaml"), "w") as f:
+        yaml.dump(model.attributes(), f)
 
     train_losses = []
     val_losses = []
@@ -113,13 +116,10 @@ def train_pytorch_model(
         model.train()
         running_loss = 0.0
         for batch_features, batch_labels in train_loader:
-            batch_features, batch_labels = batch_features.to(device), batch_labels.to(
-                device
-            )
-
             optimizer.zero_grad()
             outputs = model(batch_features)
-            loss = criterion(outputs.squeeze(), batch_labels.float())
+            #loss = criterion(outputs.squeeze(), batch_labels.float()) # keep until test impact on binary classification task (new PR)
+            loss = criterion(outputs, batch_labels)
             running_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -131,10 +131,9 @@ def train_pytorch_model(
         running_val_loss = 0.0
         with torch.no_grad():
             for batch_features, batch_labels in val_loader:
-                batch_features = batch_features.to(device)
-                batch_labels = batch_labels.to(device)
                 outputs = model(batch_features)
-                loss = criterion(outputs.squeeze(), batch_labels.float())
+                #loss = criterion(outputs.squeeze(), batch_labels.float())
+                loss = criterion(outputs, batch_labels)
                 running_val_loss += loss.item()
 
         average_val_loss = running_val_loss / len(val_loader)
@@ -165,7 +164,7 @@ def train_pytorch_model(
             "Try adjusting the hyperparameters to find the best model.",
         )
 
-    with open(f"{train_dir}/loss.yaml", "w") as f:
+    with open(os.path.join(train_dir, "loss.yaml"), "w") as f:
         yaml.dump({"train_loss": train_losses, "val_loss": val_losses}, f)
 
 
@@ -208,7 +207,7 @@ def run_gridsearch(
 
     model = grid.best_estimator_
     logger.info(grid.best_params_)
-    with open(f"{run_dir}/grid_search.yaml", "w") as f:
+    with open(os.path.join(run_dir, "grid_search.yaml"), "w") as f:
         yaml.dump({f"best_params": grid.best_params_}, f)
     return model
 
@@ -266,3 +265,4 @@ def train_lgbm(
     logger.info(f"Model saved to .pkl file")
 
     return model
+
