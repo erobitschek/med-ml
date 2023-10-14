@@ -1,9 +1,11 @@
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import numpy.typing as npt
 import torch as torch
 import torch.nn as nn
 
+from configs.config_scaffold import RunConfig
+from data import DataSplit
 
 class TorchLogisticRegression(nn.Module):
     """A simple logistic regression implementation using PyTorch.
@@ -258,3 +260,33 @@ class simple_RNN(nn.Module):
             "sequence_length": self.sequence_length,
             "hidden_size": self.hidden_size,
         }
+
+
+def init_model(
+    model: Callable,
+    config: RunConfig,
+    train_loader: torch.utils.data.dataloader.DataLoader,
+    n_classes: int = 2,
+) -> Callable:
+    """Initialize and return a machine learning model specified by the 'model' argument in the config.
+
+    Args:
+        model: Uninitialized model.
+        config: Configuration settings for the run.
+        train_loader: Training data for estimating the input dimensionality.
+        n_classes: Number of target classes.
+
+    Examples:
+        >>> train_loader = DataLoader(MyDataset(), batch_size=4, shuffle=True)
+        >>> model = init_model("pytorch_logreg", my_run_config, train_loader, n_classes=3)
+        Model type is: <TorchLogisticRegression object>
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if model == "pytorch_logreg":
+        input_dim = train_loader.dataset.x.shape[1]
+        model = TorchLogisticRegression(input_dim=input_dim).to(device)
+    elif model == "simple_cnn":
+        input_dim = train_loader.dataset.x.shape
+        model = SimpleCNN(input_shape=input_dim, n_class=n_classes).to(device)
+    print(f"Model type is: {model}")
+    return model
