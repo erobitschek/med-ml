@@ -1,11 +1,19 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
+import torch.nn as nn
+
 
 class ModelFramework(Enum):
     SKLEARN = auto()  # good for standard simple models
     PYTORCH = auto()  # for more complex nn models / more control over training process
     LIGHTGBM = auto()  # for gradient boosting models
+
+
+class PyTorchLoss(Enum):
+    BINARY_CROSS_ENTROPY = nn.BCELoss
+    CROSS_ENTROPY = nn.CrossEntropyLoss
+    MSE = nn.MSELoss
 
 
 class FeatureEncoding(Enum):
@@ -23,6 +31,15 @@ class DataState(Enum):
     RAW = auto()  # data is in raw format
     PROCESSED = auto()  # data is in processed format
     SPLIT = auto()
+
+
+class PermuteTransform:
+    """Transform to permute the dimensions of a tensor. For use with pytorch models."""
+    def __init__(self, *dims):
+        self.dims = dims
+
+    def __call__(self, tensor):
+        return tensor.permute(*self.dims)
 
 
 @dataclass(frozen=True)
@@ -47,9 +64,10 @@ class ModelConfig:
     name: str
     learning_rate: float
     batch_size: int = 32
-    batch_size: int = 32
     epochs: int = 500
+    model_type: str = "logreg"
     framework: ModelFramework = ModelFramework.SKLEARN
+    data_transforms: list = field(default_factory=lambda: None) # list of transforms to apply to data
     dropout_rate: float = 0.5
     patience: int = None
     params: dict = None  # param dict for lgbm model
@@ -57,6 +75,7 @@ class ModelConfig:
     grid_search: bool = False  # whether to perform the grid search
 
     # TODO: add post init that adds some parameters based on framework
+
 
 @dataclass
 class DatasetConfig:
