@@ -12,18 +12,16 @@ def predict_from_torch(
     data_loader: torch.utils.data.DataLoader,
     device: torch.device,
     return_probabilities: bool = False,
-) -> npt.ArrayLike:
+) -> Union[npt.ArrayLike, tuple]:
     """Use the provided model to predict labels for data in the data_loader.
 
     Args:
         model: The trained PyTorch model to use for predictions.
         data_loader: DataLoader containing the data to predict on.
         device: The device (CPU or GPU) to which the model and data should be moved before prediction.
-        return_probabilities: If True, returns the probability of the positive class,
-            otherwise returns binary labels.
-
+        return_probabilities: If True, returns the probabilities of the classes as well.
     Returns:
-        List of predicted labels or probabilities.
+        Array of predicted labels or probabilities.
 
     Example:
         >>> model = LogisticRegression(input_dim=10)
@@ -34,20 +32,23 @@ def predict_from_torch(
 
     model.eval()
     all_predictions = []
+    all_probabilities = []
 
     with torch.no_grad():
         for batch_features, _ in data_loader:
             batch_features = batch_features.to(device)
-            outputs = model(batch_features).squeeze()
+            outputs = model(batch_features)
 
             if return_probabilities:
-                predictions = torch.sigmoid(outputs).cpu().numpy()
+                probabilities = torch.softmax(outputs, dim=1).cpu().numpy()  # Use softmax for multi-class probabilities
+                all_probabilities.extend(probabilities)
+
             else:
-                predictions = (outputs > 0.5).long().cpu().numpy()
+                _, predictions = torch.max(outputs, 1)  # Get the indices of max probabilities
+                all_predictions.extend(predictions.cpu().numpy())
 
-            all_predictions.extend(predictions)
+    return np.array(all_probabilities) if return_probabilities else np.array(all_predictions)
 
-    return np.array(all_predictions)
 
 
 def save_predictions_to_file(
@@ -72,4 +73,5 @@ def save_predictions_to_file(
             if probabilities is None:
                 f.write(f"{label}\n")
             else:
-                f.write(f"{label},{probabilities[idx]}\n")
+                probas_str = ",".join([str(p) for p in probabilities[idx]])
+                f.write(f"{label},{probas_str}\n")
