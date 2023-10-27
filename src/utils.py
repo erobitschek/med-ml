@@ -229,22 +229,43 @@ def init_model(
         print(input_dim)
         model = model_class(input_dim=input_dim, n_class=n_classes).to(device)
 
-        optimizer_class = config.model.optimizer
-        optimizer = optimizer_class(model.parameters(), lr=config.model.learning_rate)
+    else:
+        raise ValueError(f"Unsupported model: {model_class}")
+    
+    optimizer_class = config.model.optimizer
+    optimizer = optimizer_class(model.parameters(), lr=config.model.learning_rate)
 
-        criterion = config.model.loss_criterion
-        print(f"Optimizer type is: {optimizer.__class__.__name__}")
-        print(f"Loss criterion is: {criterion().__class__.__name__}")
+    criterion = config.model.loss_criterion
 
-    elif model_class == ModelType.LOGREG_SKLEARN:
+    print(f"Model type is: {model.__class__.__name__}")
+    print(f"Optimizer type is: {optimizer.__class__.__name__}")
+    print(f"Loss criterion is: {criterion().__class__.__name__}")
+
+    return model, optimizer, criterion
+    
+
+def init_simple_model(
+    config: RunConfig,
+) -> Callable:
+    """Initialize and return a machine learning model based on the configuration.
+
+    Args:
+        config: Configuration settings for the run, containing model details, optimizer type, loss criterion,
+                learning rate, etc.
+    Returns:
+        The initialized model
+    """
+    model_class = config.model.model_type
+
+    if model_class == ModelType.LOGREG_SKLEARN:
         model = model_class(max_iter=config.model.epochs)
 
     elif model_class == ModelType.LGBM_CLASSIFIER:
         model = model_class(**config.model.params)
 
     else:
-        raise ValueError(f"Unsupported model: {model_class}")
+        raise ValueError(f"Unsupported simple model: {model_class}")
 
     print(f"Model type is: {model.__class__.__name__}")
 
-    return model, optimizer, criterion
+    return model
