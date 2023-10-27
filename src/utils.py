@@ -231,7 +231,7 @@ def init_model(
 
     else:
         raise ValueError(f"Unsupported model: {model_class}")
-    
+
     optimizer_class = config.model.optimizer
     optimizer = optimizer_class(model.parameters(), lr=config.model.learning_rate)
 
@@ -242,7 +242,7 @@ def init_model(
     print(f"Loss criterion is: {criterion().__class__.__name__}")
 
     return model, optimizer, criterion
-    
+
 
 def init_simple_model(
     config: RunConfig,

@@ -79,7 +79,7 @@ def run_simple(
         if not os.path.exists(model_path):
             raise FileNotFoundError("Model file not found")
 
-        #model = lgb.Booster(model_file=model_path)
+        # model = lgb.Booster(model_file=model_path)
         model = load(model_path)
         logger.info(f"Model loaded from previous training")
 

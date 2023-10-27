@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
