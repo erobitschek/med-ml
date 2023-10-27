@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
+import lightgbm as lgb
 import numpy as np
 import numpy.typing as npt
 import torch
@@ -215,11 +216,11 @@ def init_model(
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model_class = config.model.model_type
 
-    if model_class in [
+    if model_class in {
         ModelType.LOGREG_TORCH,
         ModelType.SIMPLE_CNN,
         ModelType.SIMPLE_RNN,
-    ]:
+    }:
         input_dim = (
             train_loader.dataset.x.shape[1]
             if model_class == ModelType.LOGREG_TORCH
@@ -227,15 +228,23 @@ def init_model(
         )
         print(input_dim)
         model = model_class(input_dim=input_dim, n_class=n_classes).to(device)
+
+        optimizer_class = config.model.optimizer
+        optimizer = optimizer_class(model.parameters(), lr=config.model.learning_rate)
+
+        criterion = config.model.loss_criterion
+        print(f"Optimizer type is: {optimizer.__class__.__name__}")
+        print(f"Loss criterion is: {criterion().__class__.__name__}")
+
+    elif model_class == ModelType.LOGREG_SKLEARN:
+        model = model_class(max_iter=config.model.epochs)
+
+    elif model_class == ModelType.LGBM_CLASSIFIER:
+        model = model_class(**config.model.params)
+
     else:
         raise ValueError(f"Unsupported model: {model_class}")
 
-    optimizer_class = config.model.actual_optimizer
-    optimizer = optimizer_class(model.parameters(), lr=config.model.learning_rate)
-
-    criterion = config.model.actual_loss_criterion
-
     print(f"Model type is: {model.__class__.__name__}")
-    print(f"Optimizer type is: {optimizer.__class__.__name__}")
-    print(f"Loss criterion is: {criterion().__class__.__name__}")
+
     return model, optimizer, criterion
