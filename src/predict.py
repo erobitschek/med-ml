@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -11,43 +11,41 @@ def predict_from_torch(
     model: nn.Module,
     data_loader: torch.utils.data.DataLoader,
     device: torch.device,
-    return_probabilities: bool = False,
-) -> npt.ArrayLike:
+) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
     """Use the provided model to predict labels for data in the data_loader.
 
     Args:
         model: The trained PyTorch model to use for predictions.
         data_loader: DataLoader containing the data to predict on.
         device: The device (CPU or GPU) to which the model and data should be moved before prediction.
-        return_probabilities: If True, returns the probability of the positive class,
-            otherwise returns binary labels.
-
     Returns:
-        List of predicted labels or probabilities.
+        Arrays of predicted labels and probabilities.
 
     Example:
         >>> model = LogisticRegression(input_dim=10)
         >>> data_loader = DataLoader(dataset, batch_size=32)
         >>> device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        >>> predictions = predict(model, data_loader, device)
+        >>> predictions, probabilities = predict(model, data_loader, device)
     """
 
     model.eval()
     all_predictions = []
+    all_probabilities = []
 
     with torch.no_grad():
         for batch_features, _ in data_loader:
             batch_features = batch_features.to(device)
-            outputs = model(batch_features).squeeze()
+            outputs = model(batch_features)
 
-            if return_probabilities:
-                predictions = torch.sigmoid(outputs).cpu().numpy()
-            else:
-                predictions = (outputs > 0.5).long().cpu().numpy()
+            # Use softmax for multi-class probabilities
+            probabilities = torch.softmax(outputs, dim=1).cpu().numpy()
+            all_probabilities.extend(probabilities)
 
-            all_predictions.extend(predictions)
+            # Get the indices of max probabilities
+            _, predictions = torch.max(outputs, 1)
+            all_predictions.extend(predictions.cpu().numpy())
 
-    return np.array(all_predictions)
+    return np.array(all_predictions), np.array(all_probabilities)
 
 
 def save_predictions_to_file(
@@ -72,4 +70,10 @@ def save_predictions_to_file(
             if probabilities is None:
                 f.write(f"{label}\n")
             else:
-                f.write(f"{label},{probabilities[idx]}\n")
+                if hasattr(probabilities[idx], "__iter__"):
+                    probas_str = ",".join(
+                        [str(p) for p in probabilities[idx]]
+                    )  # for more than one class
+                else:
+                    probas_str = str(probabilities[idx])  # for single class
+                f.write(f"{label},{probas_str}\n")

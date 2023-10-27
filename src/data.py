@@ -28,6 +28,12 @@ class DataSplit:
     feature_names: Array = None
     ndropped: int = None
 
+    def squeeze_to_mat(self):
+        x = self.x.squeeze() if self.x.ndim > 2 else self.x
+        return DataSplit(
+            x=x, y=self.y, feature_names=self.feature_names, ndropped=self.ndropped
+        )
+
 
 class TorchDataset(torch.utils.data.Dataset):
     """Extension of torch Dataset class, which can be passed to a DataLoader."""
@@ -40,7 +46,7 @@ class TorchDataset(torch.utils.data.Dataset):
         transforms: List[Callable] = None,
     ):
         self.y = torch.tensor(y, dtype=torch.long)
-        self.x = torch.tensor(x, dtype=torch.float32)
+        self.x = torch.squeeze(torch.tensor(x, dtype=torch.float32))[:, None, :]
         self.dataset_name = dataset_name
         self.transforms = transforms
 
@@ -51,16 +57,18 @@ class TorchDataset(torch.utils.data.Dataset):
         x_idx = self.x[idx]
 
         if self.transforms:
-            x_final = self.transforms(x_idx)
-        else:
-            x_final = x_idx
+            for transform in self.transforms:
+                x_idx = transform(x_idx)
 
-        return x_final, self.y[idx]
+        return x_idx, self.y[idx]
 
 
-def load_data(path: str, filter_cols: list = None) -> pd.DataFrame:
+def load_data(path: str, filter_cols: list = None, header: bool = True) -> pd.DataFrame:
     """Loads data from a CSV file and optionally filters certain columns."""
-    data = pd.read_csv(path)
+    if header:
+        data = pd.read_csv(path)
+    else:
+        data = pd.read_csv(path, header=None)
     return data[filter_cols] if filter_cols else data
 
 
@@ -208,7 +216,7 @@ def split_data_train_test(
     random_state: int = 3,
 ) -> tuple[DataSplit, DataSplit]:
     """Splits feature (x) and target (y) data into training and testing sets."""
-    
+
     train_size, test_size = split_ratios.train, split_ratios.test
 
     x_train, x_test, y_train, y_test = train_test_split(
@@ -256,11 +264,16 @@ def get_dataloaders(
     test: DataSplit,
     batch_size: int = 32,
     val: Optional[DataSplit] = None,
+    transforms: Optional[List[Callable]] = None,
 ) -> tuple[torch.utils.data.DataLoader, ...]:
     """Creates torch dataloaders for training, testing, and optionally validation sets."""
 
-    ds_train = TorchDataset(x=train.x, y=train.y, dataset_name=dataset)
-    ds_test = TorchDataset(x=test.x, y=test.y, dataset_name=dataset)
+    ds_train = TorchDataset(
+        x=train.x, y=train.y, dataset_name=dataset, transforms=transforms
+    )
+    ds_test = TorchDataset(
+        x=test.x, y=test.y, dataset_name=dataset, transforms=transforms
+    )
 
     train_loader = torch.utils.data.DataLoader(
         ds_train, batch_size=batch_size, shuffle=True
@@ -270,13 +283,15 @@ def get_dataloaders(
     val_loader = None
 
     if val is not None:
-        ds_val = TorchDataset(x=val.x, y=val.y, dataset_name=dataset)
+        ds_val = TorchDataset(
+            x=val.x, y=val.y, dataset_name=dataset, transforms=transforms
+        )
         val_loader = torch.utils.data.DataLoader(ds_val, batch_size=batch_size)
 
     return train_loader, test_loader, val_loader
 
 
-def prep_data_for_modelling(
+def prep_synth_med_data_for_modelling(
     config: RunConfig,
     run_dir: str,
     data_state: str,
@@ -284,6 +299,7 @@ def prep_data_for_modelling(
     to_array: bool = True,
 ) -> tuple[DataSplit, DataSplit, Optional[DataSplit]]:
     """Prepares data for modeling using the given configuration.
+    Currently tailored for the synth_med_data dataset.
 
     Args:
         config: Configuration object for data preparation.
@@ -295,6 +311,11 @@ def prep_data_for_modelling(
     Returns:
         Training, testing, and optionally validation data splits.
     """
+    if config.dataset.project != "synth_med_data":
+        raise ValueError(
+            f"This function is only for the 'synth_med_data' project dataset. {config.dataset.project} dataset not supported."
+        )
+
     logger.info(f"Loading {data_state} data")
     if not os.path.exists(config.dataset.path):
         raise FileNotFoundError(f"File {config.dataset.path} not found.")
@@ -339,5 +360,45 @@ def prep_data_for_modelling(
         logger.info(
             f"Dataset shapes (train, test, val): {train_set.x.shape}, {test_set.x.shape}, {val_set.x.shape}"
         )
+
+    return train_set, test_set, val_set
+
+
+def prep_data_for_modelling(
+    config: RunConfig,
+    run_dir: str,
+    data_state: str,
+    logger: logging.Logger,
+    to_array: bool = True,
+) -> tuple[DataSplit, DataSplit, Optional[DataSplit]]:
+    """Prepares data for modeling using the given configuration.
+
+    Args:
+        config: Configuration object for data preparation.
+        run_dir: Directory to save metadata.
+        data_state: Indicates if raw or processed data is to be loaded.
+        logger: Logger object.
+        if_array: Whether to convert df data to arrays and write metadata.
+
+    Returns:
+        Training, testing, and optionally validation data splits.
+    """
+    if config.dataset.project == "ptbdb":
+        from custom_data import load_ptbdb  # just for this dataset
+
+        train_set, test_set, val_set = load_ptbdb(
+            config=config, logger=logger, val_frac=0.15
+        )
+    elif config.dataset.project == "synth_med_data":
+        train_set, test_set, val_set = prep_synth_med_data_for_modelling(
+            config=config,
+            run_dir=run_dir,
+            data_state=data_state,
+            logger=logger,
+            to_array=to_array,
+        )
+
+    else:
+        raise ValueError(f"Dataset {config.dataset.project} not supported.")
 
     return train_set, test_set, val_set

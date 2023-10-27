@@ -8,8 +8,9 @@ config = RunConfig(
         batch_size=32,
         epochs=500,
         framework=ModelFramework.PYTORCH,
+        model_type="pytorch_logreg",
         patience=50,
-        param_grid= None,
+        param_grid=None,
     ),
     dataset=DatasetConfig(
         name="synth_400pts",

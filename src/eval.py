@@ -117,5 +117,8 @@ def run_eval(
         normalize=None,
     )
     logger.info(f"Classification report for {config.run_name}:")
-    logger.info(classification_report(true_labels, predictions, target_names=config.dataset.class_names))
-
+    logger.info(
+        classification_report(
+            true_labels, predictions, target_names=config.dataset.class_names
+        )
+    )

@@ -1,6 +1,7 @@
 import os
+import warnings
 from logging import Logger
-from typing import Dict, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -10,6 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 from joblib import dump
+from sklearn.linear_model import LogisticRegression as skLogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -19,8 +21,8 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.linear_model import LogisticRegression as skLogisticRegression
 from sklearn.model_selection import GridSearchCV
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
 from configs.config_scaffold import RunConfig
@@ -29,12 +31,12 @@ from utils import save_model
 
 ModelType = Union[skLogisticRegression, lgb.LGBMClassifier]
 
+
 def train_simple_model(
     run_dir: str,
     x_train: npt.ArrayLike,
     y_train: npt.ArrayLike,
     model: ModelType,
-    param_grid: Optional[Dict] = None,
     x_val: Optional[npt.ArrayLike] = None,
     y_val: Optional[npt.ArrayLike] = None,
 ) -> ModelType:
@@ -56,35 +58,26 @@ def train_simple_model(
 
     if x_val is None:
         x_train = x_train.squeeze()
+
     else:
         print("combine training and validation data")
         x_train = np.vstack((x_train, x_val)).squeeze()
         y_train = np.hstack((y_train, y_val))
 
-    if not param_grid:
-        model.fit(x_train, y_train)
-    else:
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
-        grid.fit(x_train, y_train)
-        model = grid.best_estimator_
-        print(grid.best_params_)
-        with open(f"{run_dir}/grid_search.yaml", "w") as f:
-            yaml.dump({f"best_params": grid.best_params_}, f)
+    model.fit(x_train, y_train)
 
     return model
 
 
 def train_pytorch_model(
-    model,
-    train_loader,
-    val_loader,
+    model: Callable,
+    optimizer: optim.Optimizer,
+    criterion: nn.Module,
+    train_loader: torch.utils.data.DataLoader,
+    val_loader: torch.utils.data.DataLoader,
     train_dir: str,
     logger: Logger,
-    device="cpu",
-    criterion=nn.BCELoss(),
-    optimizer="adam",
     num_epochs=100,
-    learning_rate=float,
     start_epoch: int = 0,
     patience: int = 20,
     checkpoint_freq: int = 10,
@@ -95,15 +88,14 @@ def train_pytorch_model(
 
     Args:
         model: PyTorch model class instance to be trained.
+        criterion: Loss function to use.
+        optimizer: Optimizer choice.
         train_loader: DataLoader object for training data.
         val_loader: DataLoader object for validation data.
         train_dir: Directory to save training artifacts.
         logger: Logger for capturing training progress.
         device: Device on which the model should be trained.
-        criterion: Loss function to use.
-        optimizer: Optimizer choice ("adam" or "sgd").
         num_epochs: Total number of epochs for training.
-        learning_rate: Learning rate for the optimizer.
         start_epoch: Epoch to begin training. Useful for resuming training.
         patience: Patience parameter for early stopping.
         checkpoint_freq: Frequency for saving model checkpoints.
@@ -111,14 +103,9 @@ def train_pytorch_model(
     """
     if save_path is None:
         save_path = train_dir
-    if optimizer == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-    elif optimizer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    else:
-        raise ValueError(
-            f"Optimizer {optimizer} not supported. Please choose between 'adam' and 'sgd'."
-        )
+
+    with open(os.path.join(train_dir, "model_attr.yaml"), "w") as f:
+        yaml.dump(model.attributes(), f)
 
     train_losses = []
     val_losses = []
@@ -130,13 +117,10 @@ def train_pytorch_model(
         model.train()
         running_loss = 0.0
         for batch_features, batch_labels in train_loader:
-            batch_features, batch_labels = batch_features.to(device), batch_labels.to(
-                device
-            )
-
             optimizer.zero_grad()
             outputs = model(batch_features)
-            loss = criterion(outputs.squeeze(), batch_labels.float())
+            # loss = criterion(outputs.squeeze(), batch_labels.float()) # keep until test impact on binary classification task (new PR)
+            loss = criterion(outputs, batch_labels)
             running_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -148,10 +132,9 @@ def train_pytorch_model(
         running_val_loss = 0.0
         with torch.no_grad():
             for batch_features, batch_labels in val_loader:
-                batch_features = batch_features.to(device)
-                batch_labels = batch_labels.to(device)
                 outputs = model(batch_features)
-                loss = criterion(outputs.squeeze(), batch_labels.float())
+                # loss = criterion(outputs.squeeze(), batch_labels.float())
+                loss = criterion(outputs, batch_labels)
                 running_val_loss += loss.item()
 
         average_val_loss = running_val_loss / len(val_loader)
@@ -182,17 +165,17 @@ def train_pytorch_model(
             "Try adjusting the hyperparameters to find the best model.",
         )
 
-    with open(f"{train_dir}/loss.yaml", "w") as f:
+    with open(os.path.join(train_dir, "loss.yaml"), "w") as f:
         yaml.dump({"train_loss": train_losses, "val_loss": val_losses}, f)
 
 
-def gridsearch_lgbm(
+def run_gridsearch(
     run_dir: str,
     config: RunConfig,
     train_set: DataSplit,
-    model: lgb.LGBMClassifier,
+    model: ModelType,
     logger: Logger,
-) -> lgb.Booster:
+) -> ModelType:
     """Run a grid search for a LightGBM model. The best parameters will be saved to a YAML file.
 
     Args:
@@ -217,10 +200,13 @@ def gridsearch_lgbm(
 
     logger.info("Performing a grid search for the best parameters...")
     grid = GridSearchCV(estimator=model, param_grid=config.model.param_grid, cv=5)
+
+    train_set = train_set.squeeze_to_mat()
     grid.fit(train_set.x, train_set.y)
+
     model = grid.best_estimator_
     logger.info(grid.best_params_)
-    with open(f"{run_dir}/grid_search.yaml", "w") as f:
+    with open(os.path.join(run_dir, "grid_search.yaml"), "w") as f:
         yaml.dump({f"best_params": grid.best_params_}, f)
     return model
 

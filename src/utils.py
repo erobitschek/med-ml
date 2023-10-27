@@ -6,14 +6,15 @@ import random
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional, Tuple
 
+import lightgbm as lgb
 import numpy as np
 import numpy.typing as npt
 import torch
 import torch.nn as nn
 
-from configs.config_scaffold import TrainMode
+from configs.config_scaffold import ModelType, RunConfig
 
 
 def load_config(path):
@@ -124,7 +125,7 @@ def setup_training_dir(
     if train_mode == "train":
         path = setup_output_dir(dataset_name, model_name, run_name, training=True)
 
-    elif train_mode.isin(["resume", "load"]):
+    elif train_mode in ["resume", "load"]:
         path = get_path(dataset_name, model_name, run_name, training=True)
         if not os.path.exists(path):
             raise FileNotFoundError("Training directory {path} not found")
@@ -193,3 +194,78 @@ def load_model(run_folder: str, model: Optional[nn.Module] = None) -> nn.Module:
         if not os.path.exists(f"{run_folder}/model.pth"):
             raise FileNotFoundError("Model file not found")
         return torch.load(f"{run_folder}/model.pth")
+
+
+def init_model(
+    config: RunConfig,
+    train_loader: torch.utils.data.dataloader.DataLoader,
+    n_classes: int = 2,
+) -> Tuple[Callable, torch.optim.Optimizer, torch.nn.modules.loss._Loss]:
+    """Initialize and return a machine learning model, optimizer, and loss criterion based on the configuration.
+    Note: Ensure all model constructors can accept the same or similar arguments
+
+    Args:
+        config: Configuration settings for the run, containing model details, optimizer type, loss criterion,
+                learning rate, etc.
+        train_loader: DataLoader for the training dataset. Used to infer input dimensions for the model.
+        n_classes: Number of target classes in the dataset.
+
+    Returns:
+        Tuple containing the initialized model, optimizer, and loss criterion.
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_class = config.model.model_type
+
+    if model_class in {
+        ModelType.LOGREG_TORCH,
+        ModelType.SIMPLE_CNN,
+        ModelType.SIMPLE_RNN,
+    }:
+        input_dim = (
+            train_loader.dataset.x.shape[1]
+            if model_class == ModelType.LOGREG_TORCH
+            else train_loader.dataset.x.shape
+        )
+        print(input_dim)
+        model = model_class(input_dim=input_dim, n_class=n_classes).to(device)
+
+    else:
+        raise ValueError(f"Unsupported model: {model_class}")
+
+    optimizer_class = config.model.optimizer
+    optimizer = optimizer_class(model.parameters(), lr=config.model.learning_rate)
+
+    criterion = config.model.loss_criterion
+
+    print(f"Model type is: {model.__class__.__name__}")
+    print(f"Optimizer type is: {optimizer.__class__.__name__}")
+    print(f"Loss criterion is: {criterion().__class__.__name__}")
+
+    return model, optimizer, criterion
+
+
+def init_simple_model(
+    config: RunConfig,
+) -> Callable:
+    """Initialize and return a machine learning model based on the configuration.
+
+    Args:
+        config: Configuration settings for the run, containing model details, optimizer type, loss criterion,
+                learning rate, etc.
+    Returns:
+        The initialized model
+    """
+    model_class = config.model.model_type
+
+    if model_class == ModelType.LOGREG_SKLEARN:
+        model = model_class(max_iter=config.model.epochs)
+
+    elif model_class == ModelType.LGBM_CLASSIFIER:
+        model = model_class(**config.model.params)
+
+    else:
+        raise ValueError(f"Unsupported simple model: {model_class}")
+
+    print(f"Model type is: {model.__class__.__name__}")
+
+    return model
