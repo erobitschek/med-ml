@@ -11,6 +11,7 @@ from configs.config_scaffold import TrainMode
 from configs.experiment_config_example import RunConfig
 from eval import run_eval
 from train import run_gridsearch, train_lgbm, train_simple_model
+from utils import init_simple_model
 
 
 def run_simple(
@@ -38,17 +39,26 @@ def run_simple(
         model_eval: If True, evaluate the model on the test set.
     """
     model_path = os.path.join(run_dir, "model.txt")
+    model = init_simple_model(config)
 
     if train_mode == TrainMode.TRAIN.name.lower():
         logger.info("Training sklearn framework of model...")
+
+        if config.model.grid_search:
+            model = run_gridsearch(
+                run_dir=run_dir,
+                config=config,
+                train_set=train_set,
+                model=model,
+                logger=logger,
+            )
 
         if val_set is None:
             model = train_simple_model(
                 run_dir=run_dir,
                 x_train=train_set.x,
                 y_train=train_set.y,
-                model=skLogisticRegression(max_iter=config.model.epochs),
-                param_grid=config.model.param_grid,
+                model=model,
             )
 
         else:
@@ -56,8 +66,7 @@ def run_simple(
                 run_dir=run_dir,
                 x_train=train_set.x,
                 y_train=train_set.y,
-                model=skLogisticRegression(max_iter=config.model.epochs),
-                param_grid=config.model.param_grid,
+                model=model,
                 x_val=val_set.x,
                 y_val=val_set.y,
             )
@@ -70,7 +79,8 @@ def run_simple(
         if not os.path.exists(model_path):
             raise FileNotFoundError("Model file not found")
 
-        model = lgb.Booster(model_file=model_path)
+        #model = lgb.Booster(model_file=model_path)
+        model = load(model_path)
         logger.info(f"Model loaded from previous training")
 
     elif train_mode == TrainMode.RESUME.name.lower():
@@ -78,6 +88,7 @@ def run_simple(
 
     if model_eval:
         logger.info(f"Predicting on test set...")
+        test_set = test_set.squeeze_to_mat()
         predictions, probabilities = (
             model.predict(test_set.x),
             model.predict_proba(test_set.x)[:, 1],
@@ -157,6 +168,7 @@ def run_lgbm(
 
     if model_eval:
         logger.info(f"Predicting on test set...")
+        test_set = test_set.squeeze_to_mat()
         probabilities = model.predict_proba(test_set.x)
         predictions = model.predict(test_set.x)
 
