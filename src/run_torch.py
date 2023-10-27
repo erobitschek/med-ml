@@ -103,15 +103,10 @@ def run_torch(
 
     if model_eval:
         logger.info(f"Predicting on test set...")
-        predictions = predict_from_torch(
+        predictions, probabilities = predict_from_torch(
             model=model, data_loader=test_loader, device=device
         )
-        probabilities = predict_from_torch(
-            model=model,
-            data_loader=test_loader,
-            device=device,
-            return_probabilities=True,
-        )
+
         run_eval(
             predictions=predictions,
             probabilities=probabilities,
