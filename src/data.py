@@ -395,4 +395,8 @@ def prep_data_for_modelling(
             logger=logger,
             to_array=to_array,
         )
+
+    else:
+        raise ValueError(f"Dataset {config.dataset.project} not supported.") 
+
     return train_set, test_set, val_set
