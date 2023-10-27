@@ -28,6 +28,10 @@ class DataSplit:
     feature_names: Array = None
     ndropped: int = None
 
+    def squeeze_to_mat(self): 
+        x = self.x.squeeze() if self.x.ndim > 2 else self.x
+        return DataSplit(x=x, y=self.y, feature_names=self.feature_names, ndropped=self.ndropped)
+
 
 class TorchDataset(torch.utils.data.Dataset):
     """Extension of torch Dataset class, which can be passed to a DataLoader."""
