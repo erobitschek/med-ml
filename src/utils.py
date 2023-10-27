@@ -227,7 +227,18 @@ def init_model(
             else train_loader.dataset.x.shape
         )
         print(input_dim)
-        model = model_class(input_dim=input_dim, n_class=n_classes).to(device)
+
+        if model_class == ModelType.SIMPLE_RNN:
+            sequence_length = 187 #input_dim[2]
+            num_layers = 2 # can adjust
+            hidden_size = 8 # can adjust 
+            model = model_class(
+                input_dim=1, n_class=n_classes, sequence_length=sequence_length, 
+                num_layers=num_layers, hidden_size=hidden_size
+            ).to(device)
+
+        else:
+            model = model_class(input_dim=input_dim, n_class=n_classes).to(device)
 
     else:
         raise ValueError(f"Unsupported model: {model_class}")
