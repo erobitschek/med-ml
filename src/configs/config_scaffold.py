@@ -1,29 +1,19 @@
 from dataclasses import InitVar, dataclass, field
 from enum import Enum, auto
-from typing import Callable, Optional, Type
+from typing import Callable, Optional, Type, Union
 
 import torch.nn as nn
 import torch.optim as optim
 
 from configs.models import ModelType
 
+LossType = Union[nn.BCELoss, nn.CrossEntropyLoss, nn.MSELoss]
+
 
 class ModelFramework(Enum):
     SKLEARN = auto()  # good for standard simple models
     PYTORCH = auto()  # for more complex nn models / more control over training process
     LIGHTGBM = auto()  # for gradient boosting models
-
-
-class PyTorchLoss(Enum):
-    BINARY_CROSS_ENTROPY = nn.BCELoss  # commonly used for binary classification
-    CROSS_ENTROPY = nn.CrossEntropyLoss  # commonly used for multi-class classification
-    MSE = nn.MSELoss  # commonly used for regression
-
-
-class PyTorchOptim(Enum):
-    ADAM = optim.Adam
-    SGD = optim.SGD
-    RMS_PROP = optim.RMSprop
 
 
 class FeatureEncoding(Enum):
@@ -78,42 +68,40 @@ class ModelConfig:
     epochs: int = 500
     model_type: ModelType = ModelType.LOGREG_SKLEARN
     framework: ModelFramework = ModelFramework.SKLEARN
-    loss_criterion: InitVar[
-        Optional[str]
-    ] = "CROSS_ENTROPY"  # default value for pytorch models
-    optimizer: InitVar[Optional[str]] = "ADAM"  # default value for pytorch models
-    actual_loss_criterion: Optional[Type[nn.Module]] = field(default=None, init=False)
-    actual_optimizer: Optional[Type[optim.Optimizer]] = field(default=None, init=False)
-    data_transforms: list = field(
-        default_factory=lambda: None
-    )  # list of transforms to apply to data
+    loss_criterion: Optional[
+        LossType
+    ] = nn.CrossEntropyLoss  # default value for pytorch models
+    optimizer: Optional[
+        optim.Optimizer
+    ] = optim.Adam  # default value for pytorch models
+    data_transforms: list = None
     dropout_rate: float = 0.5
     patience: int = None
     params: dict = None  # param dict for lgbm model
     param_grid: dict = None  # for grid search to find optimal model parameters
     grid_search: bool = False  # whether to perform the grid search
 
-    def __post_init__(self, loss_criterion: str, optimizer: str):
-        if self.framework == ModelFramework.PYTORCH:
-            self.set_pytorch_components(loss_criterion, optimizer)
-        else:
-            # TODO: Implement logic for other frameworks if needed
-            pass
 
-    def set_pytorch_components(self, loss_criterion: str, optimizer: str):
-        loss_class = (
-            PyTorchLoss[loss_criterion].value
-            if loss_criterion
-            else PyTorchLoss.CROSS_ENTROPY.value
-        )
-        optimizer_class = (
-            PyTorchOptim[optimizer].value if optimizer else PyTorchOptim.ADAM.value
-        )
-
-        object.__setattr__(
-            self, "actual_loss_criterion", loss_class
-        )  # this logic is needed to avoid dataclass immutability
-        object.__setattr__(self, "actual_optimizer", optimizer_class)
+@dataclass(frozen=True)
+class ModelConfig:
+    name: str
+    learning_rate: float
+    batch_size: int = 32
+    epochs: int = 500
+    model_type: ModelType = ModelType.LOGREG_SKLEARN
+    framework: ModelFramework = ModelFramework.SKLEARN
+    loss_criterion: Optional[
+        LossType
+    ] = nn.CrossEntropyLoss  # default value for pytorch models
+    optimizer: Optional[
+        optim.Optimizer
+    ] = optim.Adam  # default value for pytorch models
+    data_transforms: list = None
+    dropout_rate: float = 0.5
+    patience: int = None
+    params: dict = None  # param dict for lgbm model
+    param_grid: dict = None  # for grid search to find optimal model parameters
+    grid_search: bool = False  # whether to perform the grid search
 
 
 @dataclass
