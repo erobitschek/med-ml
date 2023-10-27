@@ -177,7 +177,7 @@ class SimpleCNN(nn.Module):
         """Returns the attributes of the model as a dictionary."""
         return {
             "input_dim": self.input_dim,
-            "n_classes": self.n_class,
+            "n_class": self.n_class,
             "filter_sizes": self.filter_sizes,
             "kernel_sizes": self.kernel_sizes,
             "pooling_sizes": self.pooling_sizes,
@@ -193,7 +193,7 @@ class SimpleRNN(nn.Module):
         num_layers: Number of RNN layers.
         hidden_size: Size of the RNN hidden state.
         sequence_length: Length of the sequence.
-        n_classes: Number of classes.
+        n_class: Number of classes.
         rnn: The core RNN module.
         flatten: Flatten layer.
         fc: Fully connected layer for output.
@@ -202,7 +202,7 @@ class SimpleRNN(nn.Module):
     def __init__(
         self,
         input_dim: npt.ArrayLike,
-        n_classes: int,
+        n_class: int,
         sequence_length: int,
         num_layers: int = 3,
         hidden_size: int = 64,
@@ -213,7 +213,7 @@ class SimpleRNN(nn.Module):
         self.num_layers = num_layers
         self.hidden_size = hidden_size
         self.sequence_length = sequence_length
-        self.n_classes = n_classes
+        self.n_class = n_class
         self.rnn = torch.nn.RNN(
             input_size=self.input_dim,
             hidden_size=self.hidden_size,
@@ -222,7 +222,7 @@ class SimpleRNN(nn.Module):
             batch_first=True,
         )
         self.flatten = torch.nn.Flatten()
-        self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.n_classes)
+        self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.n_class)
 
     def forward(self, input):
         """Defines the forward pass for the SimpleRNN.
@@ -257,7 +257,7 @@ class SimpleRNN(nn.Module):
         return {
             "input_dim": self.input_dim,
             "num_layers": self.num_layers,
-            "n_classes": self.n_classes,
+            "n_class": self.n_class,
             "sequence_length": self.sequence_length,
             "hidden_size": self.hidden_size,
         }
