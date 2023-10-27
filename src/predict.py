@@ -73,12 +73,16 @@ def save_predictions_to_file(
         probabilities: List of predicted probabilities corresponding
             to the labels. If provided, each line in the output file will be in the format 'label,probability'.
     """
-
+    
     output_path = Path(run_folder) / filename
     with open(output_path, "w") as f:
         for idx, label in enumerate(predictions):
             if probabilities is None:
                 f.write(f"{label}\n")
             else:
-                probas_str = ",".join([str(p) for p in probabilities[idx]])
+                if hasattr(probabilities[idx], '__iter__'):
+                    probas_str = ",".join([str(p) for p in probabilities[idx]]) # for more than one class
+                else:
+                    probas_str = str(probabilities[idx]) # for single class
                 f.write(f"{label},{probas_str}\n")
+
