@@ -58,6 +58,7 @@ def train_simple_model(
 
     if x_val is None:
         x_train = x_train.squeeze()
+
     else:
         print("combine training and validation data")
         x_train = np.vstack((x_train, x_val)).squeeze()
@@ -200,10 +201,8 @@ def run_gridsearch(
     logger.info("Performing a grid search for the best parameters...")
     grid = GridSearchCV(estimator=model, param_grid=config.model.param_grid, cv=5)
 
-    try:
-        grid.fit(train_set.x, train_set.y)
-    except ValueError:  # if the data is not in the right shape, try squeezing it
-        grid.fit(train_set.x.squeeze(), train_set.y)
+    train_set = train_set.squeeze_to_mat()
+    grid.fit(train_set.x, train_set.y)
 
     model = grid.best_estimator_
     logger.info(grid.best_params_)
